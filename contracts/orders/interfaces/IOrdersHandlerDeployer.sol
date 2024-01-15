@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {IListingsHandler} from "../interfaces/IListingsHandler.sol";
+import {IOrdersHandler} from "./IOrdersHandler.sol";
 
-interface IListingsHandlerDeployer {
+interface IOrdersHandlerDeployer {
     function deploy(
         address owner,
         address eventHandler,
         uint256 initalId
-    ) external returns (IListingsHandler);
+    ) external returns (IOrdersHandler);
 }

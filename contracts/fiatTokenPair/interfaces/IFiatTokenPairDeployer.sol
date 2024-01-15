@@ -2,14 +2,12 @@
 pragma solidity 0.8.20;
 
 import {FiatTokenPair} from "../FiatTokenPair.sol";
-import {IFiatTokenPair} from "../interfaces/IFiatTokenPair.sol";
+import {IFiatTokenPair} from "./IFiatTokenPair.sol";
 
-contract FiatTokenPairDeployer {
+interface IFiatTokenPairDeployer {
     function deploy(
         string memory pairSymbol,
         address token,
         address currencySettings
-    ) external returns (IFiatTokenPair) {
-        return new FiatTokenPair(pairSymbol, token, currencySettings, msg.sender);
-    }
+    ) external returns (IFiatTokenPair);
 }

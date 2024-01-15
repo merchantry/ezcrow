@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {OrdersHandler} from "../OrdersHandler.sol";
-import {IOrdersHandler} from "../interfaces/IOrdersHandler.sol";
+import {OrdersHandler} from "./OrdersHandler.sol";
+import {IOrdersHandler} from "./interfaces/IOrdersHandler.sol";
 
 contract OrdersHandlerDeployer {
     function deploy(

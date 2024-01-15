@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {ListingsHandler} from "../ListingsHandler.sol";
-import {IListingsHandler} from "../interfaces/IListingsHandler.sol";
+import {ListingsHandler} from "./ListingsHandler.sol";
+import {IListingsHandler} from "./interfaces/IListingsHandler.sol";
 
 contract ListingsHandlerDeployer {
     function deploy(

@@ -7,9 +7,9 @@ import {ICurrencySettings} from "../currencySettings/interfaces/ICurrencySetting
 import {Strings} from "../utils/libraries/Strings.sol";
 import {Ownable} from "../utils/Ownable.sol";
 import {IFiatTokenPairFactoryErrors} from "./interfaces/IFiatTokenPairFactoryErrors.sol";
-import {IFiatTokenPairDeployer} from "./deployer/IFiatTokenPairDeployer.sol";
-import {IListingsHandlerDeployer} from "../listings/deployer/IListingsHandlerDeployer.sol";
-import {IOrdersHandlerDeployer} from "../orders/deployer/IOrdersHandlerDeployer.sol";
+import {IFiatTokenPairDeployer} from "./interfaces/IFiatTokenPairDeployer.sol";
+import {IListingsHandlerDeployer} from "../listings/interfaces/IListingsHandlerDeployer.sol";
+import {IOrdersHandlerDeployer} from "../orders/interfaces/IOrdersHandlerDeployer.sol";
 import {IFiatTokenPair} from "./interfaces/IFiatTokenPair.sol";
 import {IListingsHandler} from "../listings/interfaces/IListingsHandler.sol";
 import {IOrdersHandler} from "../orders/interfaces/IOrdersHandler.sol";
