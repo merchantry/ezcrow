@@ -3,20 +3,25 @@ pragma solidity 0.8.20;
 
 import {ListingAction} from "../utils/enums.sol";
 import {Listing} from "../utils/structs.sol";
-import {CurrencyCalculator} from "../utils/libraries/CurrencyCalculator.sol";
+import {FixedPointMath} from "../utils/libraries/FixedPointMath.sol";
 import {Math} from "../utils/libraries/Math.sol";
 import {ListingsFactory} from "./ListingsFactory.sol";
 import {ListingsKeyStorage} from "./ListingsKeyStorage.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "../utils/Ownable.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IListingsHandlerErrors} from "./interfaces/IListingsHandlerErrors.sol";
+import {IListingsHandler} from "./interfaces/IListingsHandler.sol";
+import {IListingsEventHandler} from "./interfaces/IListingsEventHandler.sol";
 
-abstract contract ListingsHandler is
+contract ListingsHandler is
     ListingsKeyStorage,
     ListingsFactory,
+    IListingsHandler,
     IListingsHandlerErrors,
     Ownable
 {
+    IListingsEventHandler private eventHandler;
+
     /**
      * Events
      */
@@ -35,13 +40,26 @@ abstract contract ListingsHandler is
         uint256 minPricePerOrder,
         uint256 maxPricePerOrder
     ) {
-        validateListingData(price, totalTokenAmount, minPricePerOrder, maxPricePerOrder);
+        eventHandler.beforeListingCreate(
+            price,
+            totalTokenAmount,
+            minPricePerOrder,
+            maxPricePerOrder
+        );
 
         _;
     }
 
     modifier canBeUpdatedOrRemoved(uint256 id) {
-        validateListingCanBeEdited(id);
+        eventHandler.beforeListingEdit(id);
+
+        _;
+    }
+
+    modifier onlyOnEvent() {
+        if (_msgSender() != address(eventHandler)) {
+            revert CallerIsNotEventHandler(_msgSender(), address(eventHandler));
+        }
 
         _;
     }
@@ -54,31 +72,21 @@ abstract contract ListingsHandler is
         _;
     }
 
-    /**
-     * Virtual functions
-     */
-    function validateListingData(
-        uint256 price,
-        uint256 totalTokenAmount,
-        uint256 minPricePerOrder,
-        uint256 maxPricePerOrder
-    ) internal view virtual;
-
-    function validateListingCanBeEdited(uint256 id) internal view virtual;
-
-    function onListingCreated(Listing memory listing) internal virtual;
-
-    function onListingUpdated(uint256 previousAmount, Listing memory listing) internal virtual;
-
-    function onListingDeleted(Listing memory listing) internal virtual;
+    constructor(
+        address owner,
+        address _eventHandler,
+        uint256 initalId
+    ) Ownable(owner) ListingsFactory(initalId) {
+        eventHandler = IListingsEventHandler(_eventHandler);
+    }
 
     /**
-     * Internal functions
+     * On Event functions
      */
     function addListingAvailableAmount(
         uint256 listingId,
         uint256 amount
-    ) internal notDeleted(listingId) {
+    ) external onlyOnEvent notDeleted(listingId) {
         Listing storage listing = _getListing(listingId);
 
         unchecked {
@@ -89,7 +97,7 @@ abstract contract ListingsHandler is
     function subtractListingAvailableAmount(
         uint256 listingId,
         uint256 amount
-    ) internal notDeleted(listingId) {
+    ) external onlyOnEvent notDeleted(listingId) {
         Listing storage listing = _getListing(listingId);
 
         unchecked {
@@ -107,7 +115,11 @@ abstract contract ListingsHandler is
         uint256 minPricePerOrder,
         uint256 maxPricePerOrder,
         address creator
-    ) external onlyOwner validListingData(price, totalTokenAmount, minPricePerOrder, maxPricePerOrder) {
+    )
+        external
+        onlyOwner
+        validListingData(price, totalTokenAmount, minPricePerOrder, maxPricePerOrder)
+    {
         Listing memory listing = _createListing(
             action,
             price,
@@ -119,7 +131,7 @@ abstract contract ListingsHandler is
 
         initializeKeys(listing);
         emit ListingCreated(listing);
-        onListingCreated(listing);
+        eventHandler.onListingCreated(listing);
     }
 
     function updateListing(
@@ -142,11 +154,12 @@ abstract contract ListingsHandler is
 
         listing.price = price;
         listing.totalTokenAmount = totalTokenAmount;
+        listing.availableTokenAmount = totalTokenAmount;
         listing.minPricePerOrder = minPricePerOrder;
         listing.maxPricePerOrder = maxPricePerOrder;
 
         emit ListingUpdated(listing);
-        onListingUpdated(previousAmount, listing);
+        eventHandler.onListingUpdated(previousAmount, listing);
     }
 
     function deleteListing(
@@ -158,12 +171,20 @@ abstract contract ListingsHandler is
         listing.isDeleted = true;
 
         emit ListingDeleted(id);
-        onListingDeleted(listing);
+        eventHandler.onListingDeleted(listing);
     }
 
     /**
      * External view functions
      */
+    function getListing(uint256 id) external view returns (Listing memory) {
+        return _getListing(id);
+    }
+
+    function getListings() external view returns (Listing[] memory) {
+        return _getListings();
+    }
+
     function getUserListings(address user) external view returns (Listing[] memory) {
         return _getListingsFromIds(getUserListingIds(user));
     }

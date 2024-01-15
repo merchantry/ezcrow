@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import "../interfaces/IOrdersHandlerErrors.sol";
 import {OrderStatus, UserRole, ListingAction} from "../../utils/enums.sol";
 import {OrderStatusTree} from "../../utils/structs.sol";
 

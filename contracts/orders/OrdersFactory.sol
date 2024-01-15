@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import {Order} from "../utils/structs.sol";
-import {AutoIncrementingId} from "../AutoIncrementingId.sol";
+import {AutoIncrementingId} from "../utils/AutoIncrementingId.sol";
 import {OrderStatus} from "../utils/enums.sol";
 import {IOrdersFactoryErrors} from "./interfaces/IOrdersFactoryErrors.sol";
 
@@ -40,30 +40,23 @@ contract OrdersFactory is IOrdersFactoryErrors {
         return orders[id];
     }
 
-    function _getOrdersFromIds(uint256[] memory ids) internal view returns (Order[] memory) {
-        Order[] memory _orders = new Order[](ids.length);
+    function _getOrders() internal view returns (Order[] memory) {
+        Order[] memory _orders = new Order[](orderId.getCount());
+        uint256 currentId = orderId.getCurrent();
+        uint256 initialId = orderId.getInitial();
 
-        for (uint256 i = 0; i < ids.length; i++) {
-            _orders[i] = _getOrder(ids[i]);
+        for (uint256 i = initialId; i < currentId; i++) {
+            _orders[i - initialId] = orders[i];
         }
 
         return _orders;
     }
 
-    /**
-     * External view functions
-     */
-    function getOrder(uint256 id) external view returns (Order memory) {
-        return _getOrder(id);
-    }
+    function _getOrdersFromIds(uint256[] memory ids) internal view returns (Order[] memory) {
+        Order[] memory _orders = new Order[](ids.length);
 
-    function getOrders() external view returns (Order[] memory) {
-        Order[] memory _orders = new Order[](orderId.getCount());
-        uint256 currentId = orderId.getLast();
-        uint256 initialId = orderId.getInitial();
-
-        for (uint256 i = initialId; i <= currentId; i++) {
-            _orders[i - initialId] = orders[i];
+        for (uint256 i = 0; i < ids.length; i++) {
+            _orders[i] = _getOrder(ids[i]);
         }
 
         return _orders;

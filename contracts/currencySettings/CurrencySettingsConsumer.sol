@@ -11,6 +11,6 @@ abstract contract CurrencySettingsConsumer {
     }
 
     function getCurrencyDecimals() internal view returns (uint8) {
-        return ICurrencySettings(currencySettings).getDecimals();
+        return ICurrencySettings(currencySettings).decimals();
     }
 }

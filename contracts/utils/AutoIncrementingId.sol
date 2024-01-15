@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "../utils/Ownable.sol";
 
 contract AutoIncrementingId is Ownable {
     uint256 private id;
@@ -20,7 +20,7 @@ contract AutoIncrementingId is Ownable {
         return _id;
     }
 
-    function getLast() external view returns (uint256) {
+    function getCurrent() external view returns (uint256) {
         return id;
     }
 

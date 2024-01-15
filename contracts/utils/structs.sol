@@ -80,3 +80,8 @@ struct OrderStatusTree {
     OrderStatus[2] orderCreatorSellingStatuses;
     OrderStatus[1] orderCreatorBuyingStatuses;
 }
+
+struct FixedPoint {
+    uint256 value;
+    uint8 decimals;
+}

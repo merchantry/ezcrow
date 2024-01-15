@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import {ListingAction} from "../utils/enums.sol";
 import {Listing} from "../utils/structs.sol";
-import {AutoIncrementingId} from "../AutoIncrementingId.sol";
+import {AutoIncrementingId} from "../utils/AutoIncrementingId.sol";
 import {IListingsFactoryErrors} from "./interfaces/IListingsFactoryErrors.sol";
 
 abstract contract ListingsFactory is IListingsFactoryErrors {
@@ -61,30 +61,23 @@ abstract contract ListingsFactory is IListingsFactoryErrors {
         return listings[id];
     }
 
-    function _getListingsFromIds(uint256[] memory ids) internal view returns (Listing[] memory) {
-        Listing[] memory _listings = new Listing[](ids.length);
+    function _getListings() internal view returns (Listing[] memory) {
+        Listing[] memory _listings = new Listing[](listingId.getCount());
+        uint256 currentId = listingId.getCurrent();
+        uint256 initialId = listingId.getInitial();
 
-        for (uint256 i = 0; i < ids.length; i++) {
-            _listings[i] = _getListing(ids[i]);
+        for (uint256 i = initialId; i < currentId; i++) {
+            _listings[i - initialId] = listings[i];
         }
 
         return _listings;
     }
 
-    /**
-     * External view functions
-     */
-    function getListing(uint256 id) external view returns (Listing memory) {
-        return _getListing(id);
-    }
+    function _getListingsFromIds(uint256[] memory ids) internal view returns (Listing[] memory) {
+        Listing[] memory _listings = new Listing[](ids.length);
 
-    function getListings() external view returns (Listing[] memory) {
-        Listing[] memory _listings = new Listing[](listingId.getCount());
-        uint256 currentId = listingId.getLast();
-        uint256 initialId = listingId.getInitial();
-
-        for (uint256 i = initialId; i <= currentId; i++) {
-            _listings[i - initialId] = listings[i];
+        for (uint256 i = 0; i < ids.length; i++) {
+            _listings[i] = _getListing(ids[i]);
         }
 
         return _listings;

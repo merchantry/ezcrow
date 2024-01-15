@@ -6,11 +6,9 @@ import {UserOrderIds} from "./UserOrderIds.sol";
 import {Order} from "../utils/structs.sol";
 
 abstract contract OrdersKeyStorage is ListingOrderIds, UserOrderIds {
-    function getListingCreator(uint256 listingId) internal view virtual returns (address);
-
-    function initializeKeys(Order memory order) internal {
+    function initializeKeys(Order memory order, address listingCreator) internal {
         addListingOrderId(order.listingId, order.id);
         addUserOrderId(order.creator, order.id);
-        addUserOrderId(getListingCreator(order.listingId), order.id);
+        addUserOrderId(listingCreator, order.id);
     }
 }
