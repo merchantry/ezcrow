@@ -20,3 +20,20 @@ enum UserRole {
     ListingCreator,
     OrderCreator
 }
+
+enum ListingsSortBy {
+    Price,
+    AvailableAmount,
+    MinPricePerOrder
+}
+
+enum SortDirection {
+    Desc,
+    Asc
+}
+
+enum ListingsFilter {
+    All,
+    Buy,
+    Sell
+}

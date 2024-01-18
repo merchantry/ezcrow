@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {ListingAction} from "../utils/enums.sol";
+import {ListingAction, ListingsSortBy, SortDirection, ListingsFilter} from "../utils/enums.sol";
 import {Listing} from "../utils/structs.sol";
 import {FixedPointMath} from "../utils/libraries/FixedPointMath.sol";
+import {Sorting} from "../utils/libraries/Sorting.sol";
 import {Math} from "../utils/libraries/Math.sol";
+import {ArrayUtils} from "../utils/libraries/ArrayUtils.sol";
 import {ListingsFactory} from "./ListingsFactory.sol";
 import {ListingsKeyStorage} from "./ListingsKeyStorage.sol";
 import {Ownable} from "../utils/Ownable.sol";
@@ -20,6 +22,8 @@ contract ListingsHandler is
     IListingsHandlerErrors,
     Ownable
 {
+    using ArrayUtils for uint256[];
+
     IListingsEventHandler private eventHandler;
 
     /**
@@ -92,6 +96,8 @@ contract ListingsHandler is
         unchecked {
             listing.availableTokenAmount += amount;
         }
+
+        updateKeys(listing);
     }
 
     function subtractListingAvailableAmount(
@@ -103,6 +109,8 @@ contract ListingsHandler is
         unchecked {
             listing.availableTokenAmount -= amount;
         }
+
+        updateKeys(listing);
     }
 
     /**
@@ -158,6 +166,7 @@ contract ListingsHandler is
         listing.minPricePerOrder = minPricePerOrder;
         listing.maxPricePerOrder = maxPricePerOrder;
 
+        updateKeys(listing);
         emit ListingUpdated(listing);
         eventHandler.onListingUpdated(previousAmount, listing);
     }
@@ -187,5 +196,36 @@ contract ListingsHandler is
 
     function getUserListings(address user) external view returns (Listing[] memory) {
         return _getListingsFromIds(getUserListingIds(user));
+    }
+
+    function getSortedListings(
+        ListingsFilter filter,
+        ListingsSortBy sortType,
+        SortDirection dir,
+        uint256 offset,
+        uint256 count,
+        uint256 maxListings
+    ) external view returns (Listing[] memory) {
+        uint256[] memory ids = ArrayUtils
+            .range(listingId.getInitial(), listingId.getCurrent())
+            .sliceFromEnd(maxListings);
+
+        return
+            _getListingsFromIds(sortAndFilterIds(ids, filter, sortType, dir).slice(offset, count));
+    }
+
+    function getSortedUserListings(
+        address user,
+        ListingsFilter filter,
+        ListingsSortBy sortType,
+        SortDirection dir,
+        uint256 offset,
+        uint256 count,
+        uint256 maxListings
+    ) external view returns (Listing[] memory) {
+        uint256[] memory ids = getUserListingIds(user).sliceFromEnd(maxListings);
+
+        return
+            _getListingsFromIds(sortAndFilterIds(ids, filter, sortType, dir).slice(offset, count));
     }
 }

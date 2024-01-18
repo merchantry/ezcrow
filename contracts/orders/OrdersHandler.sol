@@ -2,11 +2,12 @@
 pragma solidity 0.8.20;
 
 import {Listing, Order} from "../utils/structs.sol";
-import {OrderStatus, UserRole} from "../utils/enums.sol";
+import {OrderStatus, UserRole, SortDirection} from "../utils/enums.sol";
 import {OrdersFactory} from "./OrdersFactory.sol";
 import {OrdersKeyStorage} from "./OrdersKeyStorage.sol";
 import {Ownable} from "../utils/Ownable.sol";
 import {OrderStatusHandler} from "./libraries/OrderStatusHandler.sol";
+import {ArrayUtils} from "../utils/libraries/ArrayUtils.sol";
 import {IOrdersHandler} from "./interfaces/IOrdersHandler.sol";
 import {IOrdersEventHandler} from "./interfaces/IOrdersEventHandler.sol";
 import {IOrdersHandlerErrors} from "./interfaces/IOrdersHandlerErrors.sol";
@@ -18,6 +19,7 @@ contract OrdersHandler is
     IOrdersHandlerErrors,
     Ownable
 {
+    using ArrayUtils for uint256[];
     using OrderStatusHandler for OrderStatus[];
 
     IOrdersEventHandler private eventHandler;
@@ -80,7 +82,7 @@ contract OrdersHandler is
             creator
         );
 
-        initializeKeys(order, listing.creator);
+        initializeKeys(order, listing);
         emit OrderCreated(order);
     }
 
@@ -145,5 +147,17 @@ contract OrdersHandler is
 
     function getUserOrders(address user) external view returns (Order[] memory) {
         return _getOrdersFromIds(getUserOrderIds(user));
+    }
+
+    function getSortedUserOrders(
+        address user,
+        SortDirection dir,
+        uint256 offset,
+        uint256 count,
+        uint256 maxOrders
+    ) external view returns (Order[] memory) {
+        uint256[] memory ids = getUserOrderIds(user).sliceFromEnd(maxOrders);
+
+        return _getOrdersFromIds(sortIds(ids, dir).slice(offset, count));
     }
 }

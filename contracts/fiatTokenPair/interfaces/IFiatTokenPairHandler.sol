@@ -6,6 +6,7 @@ import {IListingsHandler} from "../../listings/interfaces/IListingsHandler.sol";
 
 interface IFiatTokenPairHandler {
     function createFiatTokenPair(
+        address owner,
         address token,
         address currencySettings,
         uint256 initialListingId,

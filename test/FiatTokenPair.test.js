@@ -10,7 +10,13 @@ const {
   getListingData,
 } = require('./utils/helpers');
 const { orderStruct, listingStruct } = require('./utils/eventArgsMatches');
-const { ListingAction, OrderStatus } = require('./utils/enums');
+const {
+  ListingAction,
+  OrderStatus,
+  ListingsFilter,
+  ListingsSortBy,
+  SortDirection,
+} = require('./utils/enums');
 
 const TOKEN_NAME = 'Test Token';
 const TOKEN_SYMBOL = 'TT';
@@ -294,6 +300,149 @@ describe('FiatTokenPair', function () {
 
         listingsData.forEach(async ({ user, numOfListings }) => {
           const listings = await listingsHandler.getUserListings(user.address);
+
+          expect(listings).to.have.lengthOf(numOfListings);
+        });
+      });
+
+      it('keeps listings price key', async function () {
+        const { listingsHandler, owner } = this;
+        const { action, price, tokenAmount, min, max } = this.listingData;
+
+        const listingPrices = [price * 2n, price, price * 4n, price * 3n];
+
+        for (const listingPrice of listingPrices) {
+          await listingsHandler.createListing(
+            action,
+            listingPrice,
+            tokenAmount,
+            min,
+            max,
+            owner.address
+          );
+        }
+
+        const listings = await listingsHandler.getSortedListings(
+          ListingsFilter.All,
+          ListingsSortBy.Price,
+          SortDirection.Asc,
+          0,
+          100,
+          100
+        );
+
+        for (let i = 0; i < listings.length - 1; i++) {
+          expect(listings[i].price).to.be.lte(listings[i + 1].price);
+        }
+      });
+
+      it('keeps listings available amount key', async function () {
+        const { listingsHandler, owner } = this;
+        const { action, price, tokenAmount, min, max } = this.listingData;
+
+        const listingTokenAmounts = [
+          tokenAmount * 2n,
+          tokenAmount,
+          tokenAmount * 4n,
+          tokenAmount * 3n,
+        ];
+
+        for (const listingTokenAmount of listingTokenAmounts) {
+          await listingsHandler.createListing(
+            action,
+            price,
+            listingTokenAmount,
+            min,
+            max,
+            owner.address
+          );
+        }
+
+        const listings = await listingsHandler.getSortedListings(
+          ListingsFilter.All,
+          ListingsSortBy.AvailableAmount,
+          SortDirection.Asc,
+          0,
+          100,
+          100
+        );
+
+        for (let i = 0; i < listings.length - 1; i++) {
+          expect(listings[i].availableTokenAmount).to.be.lte(
+            listings[i + 1].availableTokenAmount
+          );
+        }
+      });
+
+      it('keeps listings min order price key', async function () {
+        const { listingsHandler, owner } = this;
+        const { action, price, tokenAmount, min, max } = this.listingData;
+
+        const listingsMinPerOrderAmounts = [min / 2n, min, min / 4n, min / 3n];
+
+        for (const listingMinPerOrderAmount of listingsMinPerOrderAmounts) {
+          await listingsHandler.createListing(
+            action,
+            price,
+            tokenAmount,
+            listingMinPerOrderAmount,
+            max,
+            owner.address
+          );
+        }
+
+        const listings = await listingsHandler.getSortedListings(
+          ListingsFilter.All,
+          ListingsSortBy.MinPricePerOrder,
+          SortDirection.Asc,
+          0,
+          100,
+          100
+        );
+
+        for (let i = 0; i < listings.length - 1; i++) {
+          expect(listings[i].minPricePerOrder).to.be.lte(
+            listings[i + 1].minPricePerOrder
+          );
+        }
+      });
+
+      it('keeps listings under action key', async function () {
+        const { listingsHandler, owner } = this;
+        const { price, tokenAmount, min, max } = this.listingData;
+
+        const listingsData = [
+          { action: ListingAction.Buy, numOfListings: 3 },
+          { action: ListingAction.Sell, numOfListings: 2 },
+        ];
+
+        listingsData.forEach(async ({ action, numOfListings }) => {
+          for (let i = 0; i < numOfListings; i++) {
+            await listingsHandler.createListing(
+              action,
+              price,
+              tokenAmount,
+              min,
+              max,
+              owner.address
+            );
+          }
+        });
+
+        listingsData.forEach(async ({ action, numOfListings }) => {
+          const filter =
+            action === ListingAction.Buy
+              ? ListingsFilter.Buy
+              : ListingsFilter.Sell;
+
+          const listings = await listingsHandler.getSortedListings(
+            filter,
+            ListingsSortBy.MinPricePerOrder,
+            SortDirection.Asc,
+            0,
+            100,
+            100
+          );
 
           expect(listings).to.have.lengthOf(numOfListings);
         });
@@ -647,6 +796,133 @@ describe('FiatTokenPair', function () {
             'ListingMaxPerOrderGreaterThanTotalPrice'
           )
           .withArgs(max, totalPrice);
+      });
+
+      it('updates price key', async function () {
+        const { listingsHandler, owner } = this;
+        const { action, price, tokenAmount, min, max } = this.listingData;
+
+        const listingPrices = [price * 2n, price, price * 4n, price * 3n];
+        const lowestPriceListingId = INITIAL_LISTING_ID + 1;
+
+        for (const listingPrice of listingPrices) {
+          await listingsHandler.createListing(
+            action,
+            listingPrice,
+            tokenAmount,
+            min,
+            max,
+            owner.address
+          );
+        }
+
+        await listingsHandler.updateListing(
+          lowestPriceListingId,
+          price * 8n,
+          tokenAmount,
+          min,
+          max,
+          owner.address
+        );
+
+        const [firstListing] = await listingsHandler.getSortedListings(
+          ListingsFilter.All,
+          ListingsSortBy.Price,
+          SortDirection.Desc,
+          0,
+          100,
+          100
+        );
+
+        expect(firstListing.id).to.equal(lowestPriceListingId);
+      });
+
+      it('updates available amount key', async function () {
+        const { listingsHandler, owner } = this;
+        const { action, price, tokenAmount, min, max } = this.listingData;
+
+        const listingTokenAmounts = [
+          tokenAmount * 2n,
+          tokenAmount,
+          tokenAmount * 4n,
+          tokenAmount * 3n,
+        ];
+        const lowestTokenAmountListingId = INITIAL_LISTING_ID + 1;
+
+        for (const listingTokenAmount of listingTokenAmounts) {
+          await listingsHandler.createListing(
+            action,
+            price,
+            listingTokenAmount,
+            min,
+            max,
+            owner.address
+          );
+        }
+
+        await listingsHandler.updateListing(
+          lowestTokenAmountListingId,
+          price,
+          tokenAmount * 8n,
+          min,
+          max,
+          owner.address
+        );
+
+        const [firstListing] = await listingsHandler.getSortedListings(
+          ListingsFilter.All,
+          ListingsSortBy.AvailableAmount,
+          SortDirection.Desc,
+          0,
+          100,
+          100
+        );
+
+        expect(firstListing.id).to.equal(lowestTokenAmountListingId);
+      });
+
+      it('updates min order price key', async function () {
+        const { listingsHandler, owner } = this;
+        const { action, price, tokenAmount, min, max } = this.listingData;
+
+        const listingsMinPerOrderAmounts = [
+          min / 2n,
+          min / 6n,
+          min / 4n,
+          min / 3n,
+        ];
+        const lowestMinPerOrderListingId = INITIAL_LISTING_ID + 1;
+
+        for (const listingMinPerOrderAmount of listingsMinPerOrderAmounts) {
+          await listingsHandler.createListing(
+            action,
+            price,
+            tokenAmount,
+            listingMinPerOrderAmount,
+            max,
+            owner.address
+          );
+        }
+
+        await listingsHandler.updateListing(
+          lowestMinPerOrderListingId,
+          price,
+          tokenAmount,
+          min,
+          max,
+          owner.address
+        );
+
+        const [firstListing] = await listingsHandler.getSortedListings(
+          ListingsFilter.All,
+          ListingsSortBy.MinPricePerOrder,
+          SortDirection.Desc,
+          0,
+          100,
+          100
+        );
+
+        expect(firstListing.id).to.equal(lowestMinPerOrderListingId);
       });
     });
 

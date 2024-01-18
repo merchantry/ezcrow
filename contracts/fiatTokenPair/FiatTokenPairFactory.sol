@@ -44,11 +44,12 @@ abstract contract FiatTokenPairFactory is IFiatTokenPairFactoryErrors {
     }
 
     function createFiatTokenPair(
+        address owner,
         address token,
         address currencySettings,
         uint256 initialListingId,
         uint256 initialOrderId
-    ) internal {
+    ) public virtual {
         string memory pairSymbol = getFiatTokenPairSymbol(token, currencySettings);
         bytes32 key = pairSymbol.toHash();
 
@@ -63,13 +64,13 @@ abstract contract FiatTokenPairFactory is IFiatTokenPairFactoryErrors {
         );
 
         IListingsHandler listingHandler = listingsHandlerDeployer.deploy(
-            address(this),
+            owner,
             address(fiatTokenPair),
             initialListingId
         );
 
         IOrdersHandler ordersHandler = ordersHandlerDeployer.deploy(
-            address(this),
+            owner,
             address(fiatTokenPair),
             initialOrderId
         );

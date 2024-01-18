@@ -42,15 +42,33 @@ describe('EzcrowRamp', function () {
 
     const ezcrowRamp = await ethers
       .getContractFactory('EzcrowRamp')
+      .then((contract) => contract.deploy());
+
+    const fiatTokenPairHandler = await ethers
+      .getContractFactory('FiatTokenPairHandler')
       .then((contract) =>
         contract.deploy(
           fiatTokenPairDeployer.target,
           listingsHandlerDeployer.target,
-          ordersHandlerDeployer.target
+          ordersHandlerDeployer.target,
+          ezcrowRamp.target
         )
       );
 
-    return { ezcrowRamp, token, owner, otherUser };
+    await ezcrowRamp.setFiatTokenPairHandler(fiatTokenPairHandler.target);
+
+    const ezcrowRampQuery = await ethers
+      .getContractFactory('EzcrowRampQuery')
+      .then((contract) => contract.deploy(fiatTokenPairHandler.target));
+
+    return {
+      ezcrowRamp,
+      ezcrowRampQuery,
+      fiatTokenPairHandler,
+      token,
+      owner,
+      otherUser,
+    };
   }
 
   async function addCurrenciesTokensAndWhitelistUser(
@@ -134,6 +152,7 @@ describe('EzcrowRamp', function () {
 
   async function setupOrderAndPutInDispute(
     ezcrowRamp,
+    fiatTokenPairHandler,
     currencySymbols,
     tokens,
     listingCreator,
@@ -149,10 +168,11 @@ describe('EzcrowRamp', function () {
 
     const users = [listingCreator, orderCreator];
     const [token] = tokens;
-    const fiatTokenPairAddress = await ezcrowRamp.getFiatTokenPairAddress(
-      TOKEN_SYMBOL,
-      CURRENCY_SYMBOL
-    );
+    const fiatTokenPairAddress =
+      await fiatTokenPairHandler.getFiatTokenPairAddress(
+        TOKEN_SYMBOL,
+        CURRENCY_SYMBOL
+      );
 
     await token.mint(orderCreator.address, listingData.tokenAmount);
     await token
@@ -220,10 +240,15 @@ describe('EzcrowRamp', function () {
     });
 
     it('creates fiat token pairs with all available currencies', async function () {
-      const { ezcrowRamp, token } = this;
+      const { ezcrowRamp, fiatTokenPairHandler, token } = this;
 
       for (const currency of CURRENCIES_TO_ADD) {
-        await ezcrowRamp.addCurrencySettings(currency, CURRENCY_DECIMALS, [], []);
+        await ezcrowRamp.addCurrencySettings(
+          currency,
+          CURRENCY_DECIMALS,
+          [],
+          []
+        );
       }
 
       await ezcrowRamp.addToken(
@@ -234,9 +259,9 @@ describe('EzcrowRamp', function () {
 
       for (const currency of CURRENCIES_TO_ADD) {
         await expect(
-          ezcrowRamp.getFiatTokenPairAddress(TOKEN_SYMBOL, currency)
+          fiatTokenPairHandler.getFiatTokenPairAddress(TOKEN_SYMBOL, currency)
         ).to.not.be.revertedWithCustomError(
-          ezcrowRamp,
+          fiatTokenPairHandler,
           'FiatTokenPairDoesNotExist'
         );
       }
@@ -246,7 +271,12 @@ describe('EzcrowRamp', function () {
       const { ezcrowRamp, token } = this;
 
       for (const currency of CURRENCIES_TO_ADD) {
-        await ezcrowRamp.addCurrencySettings(currency, CURRENCY_DECIMALS, [], []);
+        await ezcrowRamp.addCurrencySettings(
+          currency,
+          CURRENCY_DECIMALS,
+          [],
+          []
+        );
       }
 
       await expect(ezcrowRamp.addToken(token.target, [1, 2], INITIAL_ORDER_IDS))
@@ -258,7 +288,12 @@ describe('EzcrowRamp', function () {
       const { ezcrowRamp, token } = this;
 
       for (const currency of CURRENCIES_TO_ADD) {
-        await ezcrowRamp.addCurrencySettings(currency, CURRENCY_DECIMALS, [], []);
+        await ezcrowRamp.addCurrencySettings(
+          currency,
+          CURRENCY_DECIMALS,
+          [],
+          []
+        );
       }
 
       await expect(
@@ -308,7 +343,12 @@ describe('EzcrowRamp', function () {
       );
 
       await expect(
-        ezcrowRamp.addCurrencySettings(CURRENCY_SYMBOL, CURRENCY_DECIMALS, [], [])
+        ezcrowRamp.addCurrencySettings(
+          CURRENCY_SYMBOL,
+          CURRENCY_DECIMALS,
+          [],
+          []
+        )
       )
         .to.be.revertedWithCustomError(
           ezcrowRamp,
@@ -318,7 +358,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('creates fiat token pairs with all available tokens', async function () {
-      const { ezcrowRamp } = this;
+      const { ezcrowRamp, fiatTokenPairHandler } = this;
 
       for (const tokenSymbol of TOKENS_TO_ADD) {
         const newToken = await ethers
@@ -339,9 +379,12 @@ describe('EzcrowRamp', function () {
 
       for (const tokenSymbol of TOKENS_TO_ADD) {
         await expect(
-          ezcrowRamp.getFiatTokenPairAddress(tokenSymbol, CURRENCY_SYMBOL)
+          fiatTokenPairHandler.getFiatTokenPairAddress(
+            tokenSymbol,
+            CURRENCY_SYMBOL
+          )
         ).to.not.be.revertedWithCustomError(
-          ezcrowRamp,
+          fiatTokenPairHandler,
           'FiatTokenPairDoesNotExist'
         );
       }
@@ -415,7 +458,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('creates a listing', async function () {
-      const { ezcrowRamp, owner } = this;
+      const { ezcrowRamp, ezcrowRampQuery, owner } = this;
       const { action, price, tokenAmount, max, min } = this.listingData;
 
       await ezcrowRamp.createListing(
@@ -428,7 +471,7 @@ describe('EzcrowRamp', function () {
         min
       );
 
-      const listing = await ezcrowRamp.getListing(
+      const listing = await ezcrowRampQuery.getListing(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_LISTING_ID
@@ -467,7 +510,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp } = this;
+      const { ezcrowRamp, fiatTokenPairHandler } = this;
       const { action, price, tokenAmount, max, min } = this.listingData;
 
       const tokenSymbol = 'BTC';
@@ -484,7 +527,10 @@ describe('EzcrowRamp', function () {
           min
         )
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'FiatTokenPairDoesNotExist')
+        .to.be.revertedWithCustomError(
+          fiatTokenPairHandler,
+          'FiatTokenPairDoesNotExist'
+        )
         .withArgs(tokenSymbol, currencySymbol);
     });
   });
@@ -513,7 +559,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('updates a listing', async function () {
-      const { ezcrowRamp, owner } = this;
+      const { ezcrowRamp, ezcrowRampQuery, owner } = this;
       const { price, tokenAmount, max, min } = this.listingData;
 
       const newAction = ListingAction.Buy;
@@ -535,7 +581,7 @@ describe('EzcrowRamp', function () {
         newMin
       );
 
-      const listing = await ezcrowRamp.getListing(
+      const listing = await ezcrowRampQuery.getListing(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_LISTING_ID
@@ -553,7 +599,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp } = this;
+      const { ezcrowRamp, fiatTokenPairHandler } = this;
       const { action, price, tokenAmount, max, min } = this.listingData;
 
       const tokenSymbol = 'BTC';
@@ -575,12 +621,15 @@ describe('EzcrowRamp', function () {
           min
         )
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'FiatTokenPairDoesNotExist')
+        .to.be.revertedWithCustomError(
+          fiatTokenPairHandler,
+          'FiatTokenPairDoesNotExist'
+        )
         .withArgs(tokenSymbol, currencySymbol);
     });
 
     it('deletes and creates a new listing if token is changed', async function () {
-      const { ezcrowRamp, owner } = this;
+      const { ezcrowRamp, ezcrowRampQuery, owner } = this;
       const { action, price, tokenAmount, max, min } = this.listingData;
 
       const newTokenSymbol = TOKENS_TO_ADD[1];
@@ -598,13 +647,13 @@ describe('EzcrowRamp', function () {
         min
       );
 
-      const listingA = await ezcrowRamp.getListing(
+      const listingA = await ezcrowRampQuery.getListing(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_LISTING_ID
       );
 
-      const listingB = await ezcrowRamp.getListing(
+      const listingB = await ezcrowRampQuery.getListing(
         newTokenSymbol,
         CURRENCY_SYMBOL,
         INITIAL_LISTING_ID
@@ -624,7 +673,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('deletes and creates a new listing if currency is changed', async function () {
-      const { ezcrowRamp, owner } = this;
+      const { ezcrowRamp, ezcrowRampQuery, owner } = this;
       const { action, price, tokenAmount, max, min } = this.listingData;
 
       const newCurrencySymbol = CURRENCIES_TO_ADD[1];
@@ -642,13 +691,13 @@ describe('EzcrowRamp', function () {
         min
       );
 
-      const listingA = await ezcrowRamp.getListing(
+      const listingA = await ezcrowRampQuery.getListing(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_LISTING_ID
       );
 
-      const listingB = await ezcrowRamp.getListing(
+      const listingB = await ezcrowRampQuery.getListing(
         TOKEN_SYMBOL,
         newCurrencySymbol,
         INITIAL_LISTING_ID
@@ -670,16 +719,19 @@ describe('EzcrowRamp', function () {
     it('deletes and creates a new listing if action is changed', async function () {
       const {
         ezcrowRamp,
+        ezcrowRampQuery,
+        fiatTokenPairHandler,
         owner,
         tokens: [token],
       } = this;
       const { price, tokenAmount, max, min } = this.listingData;
 
       const newAction = ListingAction.Sell;
-      const fiatTokenPairAddress = await ezcrowRamp.getFiatTokenPairAddress(
-        TOKEN_SYMBOL,
-        CURRENCY_SYMBOL
-      );
+      const fiatTokenPairAddress =
+        await fiatTokenPairHandler.getFiatTokenPairAddress(
+          TOKEN_SYMBOL,
+          CURRENCY_SYMBOL
+        );
 
       await token.mint(owner.address, tokenAmount);
       await token.approve(fiatTokenPairAddress, tokenAmount);
@@ -696,7 +748,7 @@ describe('EzcrowRamp', function () {
         min
       );
 
-      const [listingA, listingB] = await ezcrowRamp.getListings(
+      const [listingA, listingB] = await ezcrowRampQuery.getListings(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL
       );
@@ -728,7 +780,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('deletes a listing', async function () {
-      const { ezcrowRamp } = this;
+      const { ezcrowRamp, ezcrowRampQuery } = this;
 
       await ezcrowRamp.deleteListing(
         TOKEN_SYMBOL,
@@ -736,7 +788,7 @@ describe('EzcrowRamp', function () {
         INITIAL_LISTING_ID
       );
 
-      const listing = await ezcrowRamp.getListing(
+      const listing = await ezcrowRampQuery.getListing(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_LISTING_ID
@@ -746,7 +798,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp } = this;
+      const { ezcrowRamp, fiatTokenPairHandler } = this;
 
       const tokenSymbol = 'BTC';
       const currencySymbol = 'AUD';
@@ -758,7 +810,10 @@ describe('EzcrowRamp', function () {
           INITIAL_LISTING_ID
         )
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'FiatTokenPairDoesNotExist')
+        .to.be.revertedWithCustomError(
+          fiatTokenPairHandler,
+          'FiatTokenPairDoesNotExist'
+        )
         .withArgs(tokenSymbol, currencySymbol);
     });
   });
@@ -778,7 +833,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('creates an order', async function () {
-      const { ezcrowRamp, otherUser: orderCreator } = this;
+      const { ezcrowRamp, ezcrowRampQuery, otherUser: orderCreator } = this;
       const { tokenAmount } = this.listingData;
 
       await ezcrowRamp
@@ -790,7 +845,7 @@ describe('EzcrowRamp', function () {
           tokenAmount
         );
 
-      const order = await ezcrowRamp.getOrder(
+      const order = await ezcrowRampQuery.getOrder(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_ORDER_ID
@@ -804,7 +859,11 @@ describe('EzcrowRamp', function () {
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp, otherUser: orderCreator } = this;
+      const {
+        ezcrowRamp,
+        fiatTokenPairHandler,
+        otherUser: orderCreator,
+      } = this;
       const { tokenAmount } = this.listingData;
 
       const tokenSymbol = 'BTC';
@@ -820,7 +879,10 @@ describe('EzcrowRamp', function () {
             tokenAmount
           )
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'FiatTokenPairDoesNotExist')
+        .to.be.revertedWithCustomError(
+          fiatTokenPairHandler,
+          'FiatTokenPairDoesNotExist'
+        )
         .withArgs(tokenSymbol, currencySymbol);
     });
   });
@@ -844,13 +906,13 @@ describe('EzcrowRamp', function () {
     });
 
     it('accepts an order', async function () {
-      const { ezcrowRamp, owner: listingCreator } = this;
+      const { ezcrowRamp, ezcrowRampQuery, owner: listingCreator } = this;
 
       await ezcrowRamp
         .connect(listingCreator)
         .acceptOrder(TOKEN_SYMBOL, CURRENCY_SYMBOL, INITIAL_ORDER_ID);
 
-      const order = await ezcrowRamp.getOrder(
+      const order = await ezcrowRampQuery.getOrder(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_ORDER_ID
@@ -863,7 +925,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp, owner: listingCreator } = this;
+      const { ezcrowRamp, fiatTokenPairHandler, owner: listingCreator } = this;
 
       const tokenSymbol = 'BTC';
       const currencySymbol = 'AUD';
@@ -873,7 +935,10 @@ describe('EzcrowRamp', function () {
           .connect(listingCreator)
           .acceptOrder(tokenSymbol, currencySymbol, INITIAL_ORDER_ID)
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'FiatTokenPairDoesNotExist')
+        .to.be.revertedWithCustomError(
+          fiatTokenPairHandler,
+          'FiatTokenPairDoesNotExist'
+        )
         .withArgs(tokenSymbol, currencySymbol);
     });
   });
@@ -897,13 +962,13 @@ describe('EzcrowRamp', function () {
     });
 
     it('rejects an order', async function () {
-      const { ezcrowRamp, owner: listingCreator } = this;
+      const { ezcrowRamp, ezcrowRampQuery, owner: listingCreator } = this;
 
       await ezcrowRamp
         .connect(listingCreator)
         .rejectOrder(TOKEN_SYMBOL, CURRENCY_SYMBOL, INITIAL_ORDER_ID);
 
-      const order = await ezcrowRamp.getOrder(
+      const order = await ezcrowRampQuery.getOrder(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_ORDER_ID
@@ -916,7 +981,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp, owner: listingCreator } = this;
+      const { ezcrowRamp, fiatTokenPairHandler, owner: listingCreator } = this;
 
       const tokenSymbol = 'BTC';
       const currencySymbol = 'AUD';
@@ -926,7 +991,10 @@ describe('EzcrowRamp', function () {
           .connect(listingCreator)
           .rejectOrder(tokenSymbol, currencySymbol, INITIAL_ORDER_ID)
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'FiatTokenPairDoesNotExist')
+        .to.be.revertedWithCustomError(
+          fiatTokenPairHandler,
+          'FiatTokenPairDoesNotExist'
+        )
         .withArgs(tokenSymbol, currencySymbol);
     });
   });
@@ -936,12 +1004,14 @@ describe('EzcrowRamp', function () {
       const {
         ezcrowRamp,
         token,
+        fiatTokenPairHandler,
         owner: listingCreator,
         otherUser: orderCreator,
       } = this;
 
       await setupOrderAndPutInDispute(
         ezcrowRamp,
+        fiatTokenPairHandler,
         [CURRENCY_SYMBOL],
         [token],
         listingCreator,
@@ -950,7 +1020,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('accepts a dispute and cancels the order', async function () {
-      const { ezcrowRamp } = this;
+      const { ezcrowRamp, ezcrowRampQuery } = this;
 
       await ezcrowRamp.acceptDispute(
         TOKEN_SYMBOL,
@@ -958,7 +1028,7 @@ describe('EzcrowRamp', function () {
         INITIAL_ORDER_ID
       );
 
-      const order = await ezcrowRamp.getOrder(
+      const order = await ezcrowRampQuery.getOrder(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_ORDER_ID
@@ -987,7 +1057,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp } = this;
+      const { ezcrowRamp, fiatTokenPairHandler } = this;
 
       const tokenSymbol = 'BTC';
       const currencySymbol = 'AUD';
@@ -995,7 +1065,10 @@ describe('EzcrowRamp', function () {
       await expect(
         ezcrowRamp.acceptDispute(tokenSymbol, currencySymbol, INITIAL_ORDER_ID)
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'FiatTokenPairDoesNotExist')
+        .to.be.revertedWithCustomError(
+          fiatTokenPairHandler,
+          'FiatTokenPairDoesNotExist'
+        )
         .withArgs(tokenSymbol, currencySymbol);
     });
   });
@@ -1005,12 +1078,14 @@ describe('EzcrowRamp', function () {
       const {
         ezcrowRamp,
         token,
+        fiatTokenPairHandler,
         owner: listingCreator,
         otherUser: orderCreator,
       } = this;
 
       await setupOrderAndPutInDispute(
         ezcrowRamp,
+        fiatTokenPairHandler,
         [CURRENCY_SYMBOL],
         [token],
         listingCreator,
@@ -1019,7 +1094,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('rejects a dispute and completes the order', async function () {
-      const { ezcrowRamp } = this;
+      const { ezcrowRamp, ezcrowRampQuery } = this;
 
       await ezcrowRamp.rejectDispute(
         TOKEN_SYMBOL,
@@ -1027,7 +1102,7 @@ describe('EzcrowRamp', function () {
         INITIAL_ORDER_ID
       );
 
-      const order = await ezcrowRamp.getOrder(
+      const order = await ezcrowRampQuery.getOrder(
         TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
         INITIAL_ORDER_ID
@@ -1056,7 +1131,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp } = this;
+      const { ezcrowRamp, fiatTokenPairHandler } = this;
 
       const tokenSymbol = 'BTC';
       const currencySymbol = 'AUD';
@@ -1064,7 +1139,10 @@ describe('EzcrowRamp', function () {
       await expect(
         ezcrowRamp.rejectDispute(tokenSymbol, currencySymbol, INITIAL_ORDER_ID)
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'FiatTokenPairDoesNotExist')
+        .to.be.revertedWithCustomError(
+          fiatTokenPairHandler,
+          'FiatTokenPairDoesNotExist'
+        )
         .withArgs(tokenSymbol, currencySymbol);
     });
   });
@@ -1135,7 +1213,10 @@ describe('EzcrowRamp', function () {
 
       const newCurrencyDecimals = 2;
 
-      await ezcrowRamp.setCurrencyDecimals(CURRENCY_SYMBOL, newCurrencyDecimals);
+      await ezcrowRamp.setCurrencyDecimals(
+        CURRENCY_SYMBOL,
+        newCurrencyDecimals
+      );
 
       const currencyDecimals =
         await ezcrowRamp.getCurrencyDecimals(CURRENCY_SYMBOL);

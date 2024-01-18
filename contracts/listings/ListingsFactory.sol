@@ -8,7 +8,7 @@ import {IListingsFactoryErrors} from "./interfaces/IListingsFactoryErrors.sol";
 
 abstract contract ListingsFactory is IListingsFactoryErrors {
     mapping(uint256 => Listing) private listings;
-    AutoIncrementingId private listingId;
+    AutoIncrementingId internal listingId;
 
     /**
      * Modifiers

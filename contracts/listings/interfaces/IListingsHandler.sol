@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import {Listing} from "../../utils/structs.sol";
-import {ListingAction} from "../../utils/enums.sol";
+import {ListingAction, SortDirection, ListingsFilter, ListingsSortBy} from "../../utils/enums.sol";
 
 interface IListingsHandler {
     function createListing(
@@ -34,4 +34,23 @@ interface IListingsHandler {
     function getListings() external view returns (Listing[] memory);
 
     function getUserListings(address user) external view returns (Listing[] memory);
+
+    function getSortedListings(
+        ListingsFilter filter,
+        ListingsSortBy sortType,
+        SortDirection dir,
+        uint256 offset,
+        uint256 count,
+        uint256 maxListings
+    ) external view returns (Listing[] memory);
+
+    function getSortedUserListings(
+        address user,
+        ListingsFilter filter,
+        ListingsSortBy sortType,
+        SortDirection dir,
+        uint256 offset,
+        uint256 count,
+        uint256 maxListings
+    ) external view returns (Listing[] memory);
 }

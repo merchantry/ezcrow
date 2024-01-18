@@ -12,7 +12,27 @@ const OrderStatus = {
   Cancelled: 6,
 };
 
+const ListingsSortBy = {
+  Price: 0,
+  AvailableAmount: 1,
+  MinPricePerOrder: 2,
+};
+
+const SortDirection = {
+  Desc: 0,
+  Asc: 1,
+};
+
+const ListingsFilter = {
+  All: 0,
+  Buy: 1,
+  Sell: 2,
+};
+
 module.exports = {
   ListingAction,
   OrderStatus,
+  ListingsSortBy,
+  SortDirection,
+  ListingsFilter,
 };
