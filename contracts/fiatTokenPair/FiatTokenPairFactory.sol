@@ -13,6 +13,8 @@ import {IOrdersHandlerDeployer} from "../orders/interfaces/IOrdersHandlerDeploye
 import {IFiatTokenPair} from "./interfaces/IFiatTokenPair.sol";
 import {IListingsHandler} from "../listings/interfaces/IListingsHandler.sol";
 import {IOrdersHandler} from "../orders/interfaces/IOrdersHandler.sol";
+import {IOrdersKeyStorageDeployer} from "../orders/interfaces/IOrdersKeyStorageDeployer.sol";
+import {IListingsKeyStorageDeployer} from "../listings/interfaces/IListingsKeyStorageDeployer.sol";
 
 abstract contract FiatTokenPairFactory is IFiatTokenPairFactoryErrors {
     using Strings for string;
@@ -20,16 +22,22 @@ abstract contract FiatTokenPairFactory is IFiatTokenPairFactoryErrors {
     mapping(bytes32 => address) private fiatTokenPairs;
 
     IFiatTokenPairDeployer private fiatTokenPairDeployer;
+    IListingsKeyStorageDeployer private listingsKeyStorageDeployer;
     IListingsHandlerDeployer private listingsHandlerDeployer;
+    IOrdersKeyStorageDeployer private ordersKeyStorageDeployer;
     IOrdersHandlerDeployer private ordersHandlerDeployer;
 
     constructor(
         address _fiatTokenPairDeployer,
+        address _listingsKeyStorageDeployer,
         address _listingsHandlerDeployer,
+        address _ordersKeyStorageDeployer,
         address _ordersHandlerDeployer
     ) {
         fiatTokenPairDeployer = IFiatTokenPairDeployer(_fiatTokenPairDeployer);
+        listingsKeyStorageDeployer = IListingsKeyStorageDeployer(_listingsKeyStorageDeployer);
         listingsHandlerDeployer = IListingsHandlerDeployer(_listingsHandlerDeployer);
+        ordersKeyStorageDeployer = IOrdersKeyStorageDeployer(_ordersKeyStorageDeployer);
         ordersHandlerDeployer = IOrdersHandlerDeployer(_ordersHandlerDeployer);
     }
 
@@ -63,19 +71,21 @@ abstract contract FiatTokenPairFactory is IFiatTokenPairFactoryErrors {
             currencySettings
         );
 
-        IListingsHandler listingHandler = listingsHandlerDeployer.deploy(
+        IListingsHandler listingsHandler = listingsHandlerDeployer.deploy(
             owner,
             address(fiatTokenPair),
+            address(listingsKeyStorageDeployer),
             initialListingId
         );
 
         IOrdersHandler ordersHandler = ordersHandlerDeployer.deploy(
             owner,
             address(fiatTokenPair),
+            address(ordersKeyStorageDeployer),
             initialOrderId
         );
 
-        fiatTokenPair.setListingsHandler(address(listingHandler));
+        fiatTokenPair.setListingsHandler(address(listingsHandler));
         fiatTokenPair.setOrdersHandler(address(ordersHandler));
 
         fiatTokenPairs[key] = address(fiatTokenPair);

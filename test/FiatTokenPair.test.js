@@ -16,6 +16,7 @@ const {
   ListingsFilter,
   ListingsSortBy,
   SortDirection,
+  OrdersFilter,
 } = require('./utils/enums');
 
 const TOKEN_NAME = 'Test Token';
@@ -53,16 +54,34 @@ describe('FiatTokenPair', function () {
         )
       );
 
+    const listingsKeyStorageDeployer = await ethers
+      .getContractFactory('ListingsKeyStorageDeployer')
+      .then((contract) => contract.deploy());
+
     const listingsHandler = await ethers
       .getContractFactory('ListingsHandler')
       .then((contract) =>
-        contract.deploy(owner.address, fiatTokenPair.target, INITIAL_LISTING_ID)
+        contract.deploy(
+          owner.address,
+          fiatTokenPair.target,
+          listingsKeyStorageDeployer.target,
+          INITIAL_LISTING_ID
+        )
       );
+
+    const ordersKeyStorageDeployer = await ethers
+      .getContractFactory('OrdersKeyStorageDeployer')
+      .then((contract) => contract.deploy());
 
     const ordersHandler = await ethers
       .getContractFactory('OrdersHandler')
       .then((contract) =>
-        contract.deploy(owner.address, fiatTokenPair.target, INITIAL_ORDER_ID)
+        contract.deploy(
+          owner.address,
+          fiatTokenPair.target,
+          ordersKeyStorageDeployer.target,
+          INITIAL_ORDER_ID
+        )
       );
 
     await fiatTokenPair.setListingsHandler(listingsHandler.target);
@@ -1332,6 +1351,37 @@ describe('FiatTokenPair', function () {
           expect(orders).to.have.lengthOf(numOfOrders);
         });
       });
+
+      it('keeps orders under status key', async function () {
+        const { listingsHandler, ordersHandler, owner } = this;
+        const { tokenAmount, price, action, min, max } = this.listingData;
+
+        await listingsHandler.createListing(
+          action,
+          price,
+          tokenAmount,
+          min,
+          max,
+          owner.address
+        );
+
+        await ordersHandler.createOrder(
+          INITIAL_LISTING_ID,
+          tokenAmount,
+          owner.address
+        );
+
+        const [order] = await ordersHandler.getSortedUserOrders(
+          owner.address,
+          OrdersFilter.RequestSent,
+          SortDirection.Asc,
+          0,
+          100,
+          100
+        );
+
+        expect(order.id).to.equal(INITIAL_ORDER_ID);
+      });
     });
 
     const METHODS = [
@@ -1428,6 +1478,40 @@ describe('FiatTokenPair', function () {
           await token
             .connect(orderCreator)
             .approve(fiatTokenPair.target, tokenAmount);
+        });
+
+        it('updates order status key', async function () {
+          const {
+            ordersHandler,
+            owner: listingCreator,
+            otherUser: orderCreator,
+          } = this;
+
+          const { tokenAmount } = this.listingData;
+
+          await ordersHandler.createOrder(
+            INITIAL_LISTING_ID,
+            tokenAmount,
+            orderCreator.address
+          );
+
+          await ordersHandler[methodName](
+            INITIAL_ORDER_ID,
+            listingCreator.address
+          );
+
+          const [order] = await ordersHandler.getSortedUserOrders(
+            orderCreator.address,
+            methodName === 'acceptOrder'
+              ? OrdersFilter.AssetsConfirmed
+              : OrdersFilter.Cancelled,
+            SortDirection.Asc,
+            0,
+            100,
+            100
+          );
+
+          expect(order.id).to.equal(INITIAL_ORDER_ID);
         });
 
         it('emits an event', async function () {
@@ -1931,6 +2015,32 @@ describe('FiatTokenPair', function () {
             INITIAL_ORDER_ID,
             orderCreator.address
           );
+        });
+
+        it('updates order status key', async function () {
+          const {
+            ordersHandler,
+            owner: listingCreator,
+            otherUser: orderCreator,
+          } = this;
+
+          await ordersHandler[methodName](
+            INITIAL_ORDER_ID,
+            listingCreator.address
+          );
+
+          const [order] = await ordersHandler.getSortedUserOrders(
+            orderCreator.address,
+            methodName === 'acceptDispute'
+              ? OrdersFilter.Cancelled
+              : OrdersFilter.Completed,
+            SortDirection.Asc,
+            0,
+            100,
+            100
+          );
+
+          expect(order.id).to.equal(INITIAL_ORDER_ID);
         });
 
         it('correctly updates the order which is in dispute', async function () {

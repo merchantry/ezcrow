@@ -39,9 +39,29 @@ const getListingData = (tokenDecimals, priceDecimals) => {
   };
 };
 
+const newArray = (length, callback) => {
+  const arr = [];
+  for (let i = 0; i < length; i++) {
+    arr.push(callback(i));
+  }
+
+  return arr;
+};
+
+const newArrayPromise = async (length, callback) => {
+  const arr = [];
+  for (let i = 0; i < length; i++) {
+    arr.push(await callback(i));
+  }
+
+  return arr;
+};
+
 module.exports = {
   multiplyByTenPow,
   getOrderCurrentStatus,
   findObjectKeyByValue,
   getListingData,
+  newArray,
+  newArrayPromise,
 };

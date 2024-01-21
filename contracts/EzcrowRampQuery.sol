@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import {IFiatTokenPairHandler} from "./fiatTokenPair/interfaces/IFiatTokenPairHandler.sol";
 import {Listing, Order} from "./utils/structs.sol";
-import {SortDirection, ListingsFilter, ListingsSortBy} from "./utils/enums.sol";
+import {SortDirection, ListingsFilter, ListingsSortBy, OrdersFilter} from "./utils/enums.sol";
 
 contract EzcrowRampQuery {
     IFiatTokenPairHandler private fiatTokenPairHandler;
@@ -48,7 +48,7 @@ contract EzcrowRampQuery {
         string memory tokenSymbol,
         string memory currencySymbol,
         ListingsFilter filter,
-        ListingsSortBy sortType,
+        ListingsSortBy sortBy,
         SortDirection dir,
         uint256 offset,
         uint256 count,
@@ -57,7 +57,7 @@ contract EzcrowRampQuery {
         return
             fiatTokenPairHandler.getListingsHandler(tokenSymbol, currencySymbol).getSortedListings(
                 filter,
-                sortType,
+                sortBy,
                 dir,
                 offset,
                 count,
@@ -70,7 +70,7 @@ contract EzcrowRampQuery {
         string memory currencySymbol,
         address user,
         ListingsFilter filter,
-        ListingsSortBy sortType,
+        ListingsSortBy sortBy,
         SortDirection dir,
         uint256 offset,
         uint256 count,
@@ -79,7 +79,7 @@ contract EzcrowRampQuery {
         return
             fiatTokenPairHandler
                 .getListingsHandler(tokenSymbol, currencySymbol)
-                .getSortedUserListings(user, filter, sortType, dir, offset, count, maxListings);
+                .getSortedUserListings(user, filter, sortBy, dir, offset, count, maxListings);
     }
 
     function getOrder(
@@ -121,6 +121,7 @@ contract EzcrowRampQuery {
         string memory tokenSymbol,
         string memory currencySymbol,
         address user,
+        OrdersFilter filter,
         SortDirection dir,
         uint256 offset,
         uint256 count,
@@ -129,6 +130,7 @@ contract EzcrowRampQuery {
         return
             fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).getSortedUserOrders(
                 user,
+                filter,
                 dir,
                 offset,
                 count,

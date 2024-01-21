@@ -29,10 +29,22 @@ const ListingsFilter = {
   Sell: 2,
 };
 
+const OrdersFilter = {
+  All: 0,
+  RequestSent: 1,
+  AssetsConfirmed: 2,
+  TokensDeposited: 3,
+  PaymentSent: 4,
+  Completed: 5,
+  InDispute: 6,
+  Cancelled: 7,
+};
+
 module.exports = {
   ListingAction,
   OrderStatus,
   ListingsSortBy,
   SortDirection,
   ListingsFilter,
+  OrdersFilter,
 };

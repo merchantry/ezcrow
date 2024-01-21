@@ -37,3 +37,14 @@ enum ListingsFilter {
     Buy,
     Sell
 }
+
+enum OrdersFilter {
+    All,
+    RequestSent,
+    AssetsConfirmed,
+    TokensDeposited,
+    PaymentSent,
+    Completed,
+    InDispute,
+    Cancelled
+}

@@ -7,6 +7,7 @@ interface IListingsHandlerDeployer {
     function deploy(
         address owner,
         address eventHandler,
+        address listingsKeyStorageDeployer,
         uint256 initalId
     ) external returns (IListingsHandler);
 }

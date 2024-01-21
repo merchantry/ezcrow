@@ -15,8 +15,6 @@ const CURRENCIES_TO_ADD = [CURRENCY_SYMBOL, 'EUR', 'INR'];
 const TOKENS_TO_ADD = [TOKEN_SYMBOL, 'ETH', 'LTC'];
 const INITIAL_LISTING_ID = 220000;
 const INITIAL_ORDER_ID = 480000;
-const INITIAL_LISTING_IDS = [INITIAL_LISTING_ID, 510000, 760000];
-const INITIAL_ORDER_IDS = [INITIAL_ORDER_ID, 330000, 110000];
 
 describe('EzcrowRamp', function () {
   async function deployFixture() {
@@ -26,8 +24,16 @@ describe('EzcrowRamp', function () {
       .getContractFactory('FiatTokenPairDeployer')
       .then((contract) => contract.deploy());
 
+    const listingsKeyStorageDeployer = await ethers
+      .getContractFactory('ListingsKeyStorageDeployer')
+      .then((contract) => contract.deploy());
+
     const listingsHandlerDeployer = await ethers
       .getContractFactory('ListingsHandlerDeployer')
+      .then((contract) => contract.deploy());
+
+    const ordersKeyStorageDeployer = await ethers
+      .getContractFactory('OrdersKeyStorageDeployer')
       .then((contract) => contract.deploy());
 
     const ordersHandlerDeployer = await ethers
@@ -49,7 +55,9 @@ describe('EzcrowRamp', function () {
       .then((contract) =>
         contract.deploy(
           fiatTokenPairDeployer.target,
+          listingsKeyStorageDeployer.target,
           listingsHandlerDeployer.target,
+          ordersKeyStorageDeployer.target,
           ordersHandlerDeployer.target,
           ezcrowRamp.target
         )
@@ -77,21 +85,25 @@ describe('EzcrowRamp', function () {
     tokens,
     owner
   ) {
-    const listingIds = Array.from(
-      { length: currencySymbols.length },
-      () => INITIAL_LISTING_ID
-    );
-    const orderIds = Array.from(
-      { length: currencySymbols.length },
-      () => INITIAL_ORDER_ID
-    );
-
     for (const currency of currencySymbols) {
-      await ezcrowRamp.addCurrencySettings(currency, CURRENCY_DECIMALS, [], []);
+      await ezcrowRamp.addCurrencySettings(currency, CURRENCY_DECIMALS);
     }
 
     for (const token of tokens) {
-      await ezcrowRamp.addToken(token.target, listingIds, orderIds);
+      await ezcrowRamp.addToken(token.target);
+    }
+
+    for (const token of tokens) {
+      const tokenSymbol = await token.symbol();
+
+      for (const currencySymbol of currencySymbols) {
+        await ezcrowRamp.connectFiatTokenPair(
+          tokenSymbol,
+          currencySymbol,
+          INITIAL_LISTING_ID,
+          INITIAL_ORDER_ID
+        );
+      }
     }
     await ezcrowRamp.addUserToWhitelist(owner.address);
   }
@@ -208,7 +220,7 @@ describe('EzcrowRamp', function () {
     it('adds token', async function () {
       const { ezcrowRamp, token } = this;
 
-      await ezcrowRamp.addToken(token.target, [], []);
+      await ezcrowRamp.addToken(token.target);
 
       const [tokenAddress] = await ezcrowRamp.getAllTokenAddresses();
 
@@ -218,7 +230,7 @@ describe('EzcrowRamp', function () {
     it('reverts if not accessed by owner', async function () {
       const { ezcrowRamp, token, otherUser } = this;
 
-      await expect(ezcrowRamp.connect(otherUser).addToken(token.target, [], []))
+      await expect(ezcrowRamp.connect(otherUser).addToken(token.target))
         .to.be.revertedWithCustomError(ezcrowRamp, 'OwnableUnauthorizedAccount')
         .withArgs(otherUser.address);
     });
@@ -232,75 +244,11 @@ describe('EzcrowRamp', function () {
           contract.deploy(TOKEN_NAME, TOKEN_SYMBOL, TOKEN_DECIMALS)
         );
 
-      await ezcrowRamp.addToken(token.target, [], []);
+      await ezcrowRamp.addToken(token.target);
 
-      await expect(ezcrowRamp.addToken(newToken.target, [], []))
+      await expect(ezcrowRamp.addToken(newToken.target))
         .to.be.revertedWithCustomError(ezcrowRamp, 'TokenAlreadyExists')
         .withArgs(TOKEN_SYMBOL);
-    });
-
-    it('creates fiat token pairs with all available currencies', async function () {
-      const { ezcrowRamp, fiatTokenPairHandler, token } = this;
-
-      for (const currency of CURRENCIES_TO_ADD) {
-        await ezcrowRamp.addCurrencySettings(
-          currency,
-          CURRENCY_DECIMALS,
-          [],
-          []
-        );
-      }
-
-      await ezcrowRamp.addToken(
-        token.target,
-        INITIAL_LISTING_IDS,
-        INITIAL_ORDER_IDS
-      );
-
-      for (const currency of CURRENCIES_TO_ADD) {
-        await expect(
-          fiatTokenPairHandler.getFiatTokenPairAddress(TOKEN_SYMBOL, currency)
-        ).to.not.be.revertedWithCustomError(
-          fiatTokenPairHandler,
-          'FiatTokenPairDoesNotExist'
-        );
-      }
-    });
-
-    it('reverts if invalid amount of listing ids are provided', async function () {
-      const { ezcrowRamp, token } = this;
-
-      for (const currency of CURRENCIES_TO_ADD) {
-        await ezcrowRamp.addCurrencySettings(
-          currency,
-          CURRENCY_DECIMALS,
-          [],
-          []
-        );
-      }
-
-      await expect(ezcrowRamp.addToken(token.target, [1, 2], INITIAL_ORDER_IDS))
-        .to.be.revertedWithCustomError(ezcrowRamp, 'InvalidListingIdsLength')
-        .withArgs(CURRENCIES_TO_ADD.length);
-    });
-
-    it('reverts if invalid amount of order ids are provided', async function () {
-      const { ezcrowRamp, token } = this;
-
-      for (const currency of CURRENCIES_TO_ADD) {
-        await ezcrowRamp.addCurrencySettings(
-          currency,
-          CURRENCY_DECIMALS,
-          [],
-          []
-        );
-      }
-
-      await expect(
-        ezcrowRamp.addToken(token.target, INITIAL_LISTING_IDS, [1, 2])
-      )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'InvalidOrderIdsLength')
-        .withArgs(CURRENCIES_TO_ADD.length);
     });
   });
 
@@ -308,12 +256,7 @@ describe('EzcrowRamp', function () {
     it('adds currency settings', async function () {
       const { ezcrowRamp } = this;
 
-      await ezcrowRamp.addCurrencySettings(
-        CURRENCY_SYMBOL,
-        CURRENCY_DECIMALS,
-        [],
-        []
-      );
+      await ezcrowRamp.addCurrencySettings(CURRENCY_SYMBOL, CURRENCY_DECIMALS);
 
       const [currencySymbol] = await ezcrowRamp.getCurrencySymbols();
 
@@ -326,7 +269,7 @@ describe('EzcrowRamp', function () {
       await expect(
         ezcrowRamp
           .connect(otherUser)
-          .addCurrencySettings('USD', CURRENCY_DECIMALS, [], [])
+          .addCurrencySettings('USD', CURRENCY_DECIMALS)
       )
         .to.be.revertedWithCustomError(ezcrowRamp, 'OwnableUnauthorizedAccount')
         .withArgs(otherUser.address);
@@ -335,20 +278,10 @@ describe('EzcrowRamp', function () {
     it('reverts if currency with same symbol already exists', async function () {
       const { ezcrowRamp } = this;
 
-      await ezcrowRamp.addCurrencySettings(
-        CURRENCY_SYMBOL,
-        CURRENCY_DECIMALS,
-        [],
-        []
-      );
+      await ezcrowRamp.addCurrencySettings(CURRENCY_SYMBOL, CURRENCY_DECIMALS);
 
       await expect(
-        ezcrowRamp.addCurrencySettings(
-          CURRENCY_SYMBOL,
-          CURRENCY_DECIMALS,
-          [],
-          []
-        )
+        ezcrowRamp.addCurrencySettings(CURRENCY_SYMBOL, CURRENCY_DECIMALS)
       )
         .to.be.revertedWithCustomError(
           ezcrowRamp,
@@ -356,88 +289,115 @@ describe('EzcrowRamp', function () {
         )
         .withArgs(CURRENCY_SYMBOL);
     });
+  });
 
-    it('creates fiat token pairs with all available tokens', async function () {
+  describe('connectFiatTokenPair', function () {
+    beforeEach(async function () {
+      const { ezcrowRamp, token } = this;
+
+      await ezcrowRamp.addCurrencySettings(CURRENCY_SYMBOL, CURRENCY_DECIMALS);
+      await ezcrowRamp.addToken(token.target);
+    });
+
+    it('connects fiat token pair', async function () {
       const { ezcrowRamp, fiatTokenPairHandler } = this;
 
-      for (const tokenSymbol of TOKENS_TO_ADD) {
-        const newToken = await ethers
-          .getContractFactory('TestToken')
-          .then((contract) =>
-            contract.deploy(TOKEN_NAME, tokenSymbol, TOKEN_DECIMALS)
-          );
-
-        await ezcrowRamp.addToken(newToken.target, [], []);
-      }
-
-      await ezcrowRamp.addCurrencySettings(
+      await ezcrowRamp.connectFiatTokenPair(
+        TOKEN_SYMBOL,
         CURRENCY_SYMBOL,
-        CURRENCY_DECIMALS,
-        INITIAL_LISTING_IDS,
-        INITIAL_ORDER_IDS
+        INITIAL_LISTING_ID,
+        INITIAL_ORDER_ID
       );
 
-      for (const tokenSymbol of TOKENS_TO_ADD) {
-        await expect(
-          fiatTokenPairHandler.getFiatTokenPairAddress(
-            tokenSymbol,
-            CURRENCY_SYMBOL
-          )
-        ).to.not.be.revertedWithCustomError(
-          fiatTokenPairHandler,
-          'FiatTokenPairDoesNotExist'
+      const fiatTokenPairAddress =
+        await fiatTokenPairHandler.getFiatTokenPairAddress(
+          TOKEN_SYMBOL,
+          CURRENCY_SYMBOL
         );
-      }
+
+      expect(fiatTokenPairAddress).not.to.be.undefined;
     });
 
-    it('reverts if invalid amount of listing ids are provided', async function () {
-      const { ezcrowRamp } = this;
-
-      for (const tokenSymbol of TOKENS_TO_ADD) {
-        const newToken = await ethers
-          .getContractFactory('TestToken')
-          .then((contract) =>
-            contract.deploy(TOKEN_NAME, tokenSymbol, TOKEN_DECIMALS)
-          );
-
-        await ezcrowRamp.addToken(newToken.target, [], []);
-      }
+    it('reverts if not accessed by owner', async function () {
+      const { ezcrowRamp, otherUser } = this;
 
       await expect(
-        ezcrowRamp.addCurrencySettings(
-          CURRENCY_SYMBOL,
-          CURRENCY_DECIMALS,
-          [1, 2],
-          INITIAL_ORDER_IDS
-        )
+        ezcrowRamp
+          .connect(otherUser)
+          .connectFiatTokenPair(
+            TOKEN_SYMBOL,
+            CURRENCY_SYMBOL,
+            INITIAL_LISTING_ID,
+            INITIAL_ORDER_ID
+          )
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'InvalidListingIdsLength')
-        .withArgs(TOKENS_TO_ADD.length);
+        .to.be.revertedWithCustomError(ezcrowRamp, 'OwnableUnauthorizedAccount')
+        .withArgs(otherUser.address);
     });
 
-    it('reverts if invalid amount of order ids are provided', async function () {
+    it('reverts if token does not exist', async function () {
       const { ezcrowRamp } = this;
 
-      for (const tokenSymbol of TOKENS_TO_ADD) {
-        const newToken = await ethers
-          .getContractFactory('TestToken')
-          .then((contract) =>
-            contract.deploy(TOKEN_NAME, tokenSymbol, TOKEN_DECIMALS)
-          );
-
-        await ezcrowRamp.addToken(newToken.target, [], []);
-      }
+      const tokenSymbol = 'BTC';
 
       await expect(
-        ezcrowRamp.addCurrencySettings(
+        ezcrowRamp.connectFiatTokenPair(
+          tokenSymbol,
           CURRENCY_SYMBOL,
-          CURRENCY_DECIMALS,
-          INITIAL_LISTING_IDS,
-          [1, 2]
+          INITIAL_LISTING_ID,
+          INITIAL_ORDER_ID
         )
       )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'InvalidOrderIdsLength')
-        .withArgs(TOKENS_TO_ADD.length);
+        .to.be.revertedWithCustomError(ezcrowRamp, 'TokenDoesNotExist')
+        .withArgs(tokenSymbol);
+    });
+
+    it('reverts if currency settings do not exist', async function () {
+      const { ezcrowRamp } = this;
+
+      const currencySymbol = 'BTC';
+
+      await expect(
+        ezcrowRamp.connectFiatTokenPair(
+          TOKEN_SYMBOL,
+          currencySymbol,
+          INITIAL_LISTING_ID,
+          INITIAL_ORDER_ID
+        )
+      )
+        .to.be.revertedWithCustomError(
+          ezcrowRamp,
+          'CurrencySettingsDoesNotExist'
+        )
+        .withArgs(currencySymbol);
+    });
+
+    it('reverts if fiat token pair already exists', async function () {
+      const { ezcrowRamp, fiatTokenPairHandler, token } = this;
+
+      const currencySettingsAddress =
+        await ezcrowRamp.getCurrencySettingsAddress(CURRENCY_SYMBOL);
+
+      await ezcrowRamp.connectFiatTokenPair(
+        TOKEN_SYMBOL,
+        CURRENCY_SYMBOL,
+        INITIAL_LISTING_ID,
+        INITIAL_ORDER_ID
+      );
+
+      await expect(
+        ezcrowRamp.connectFiatTokenPair(
+          TOKEN_SYMBOL,
+          CURRENCY_SYMBOL,
+          INITIAL_LISTING_ID,
+          INITIAL_ORDER_ID
+        )
+      )
+        .to.be.revertedWithCustomError(
+          fiatTokenPairHandler,
+          'FiatTokenPairAlreadyExists'
+        )
+        .withArgs(token.target, currencySettingsAddress);
     });
   });
 
@@ -1200,12 +1160,7 @@ describe('EzcrowRamp', function () {
     beforeEach(async function () {
       const { ezcrowRamp } = this;
 
-      await ezcrowRamp.addCurrencySettings(
-        CURRENCY_SYMBOL,
-        CURRENCY_DECIMALS,
-        [],
-        []
-      );
+      await ezcrowRamp.addCurrencySettings(CURRENCY_SYMBOL, CURRENCY_DECIMALS);
     });
 
     it('updates currency decimals', async function () {

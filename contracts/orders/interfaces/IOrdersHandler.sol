@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import {Order} from "../../utils/structs.sol";
-import {SortDirection} from "../../utils/enums.sol";
+import {SortDirection, OrdersFilter} from "../../utils/enums.sol";
 
 interface IOrdersHandler {
     function createOrder(uint256 listingId, uint256 tokenAmount, address creator) external;
@@ -25,6 +25,7 @@ interface IOrdersHandler {
 
     function getSortedUserOrders(
         address user,
+        OrdersFilter filter,
         SortDirection dir,
         uint256 offset,
         uint256 count,

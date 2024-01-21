@@ -7,6 +7,7 @@ interface IOrdersHandlerDeployer {
     function deploy(
         address owner,
         address eventHandler,
+        address ordersKeyStorageDeployer,
         uint256 initalId
     ) external returns (IOrdersHandler);
 }

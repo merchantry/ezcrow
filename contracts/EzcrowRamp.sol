@@ -18,10 +18,6 @@ import {SortDirection, ListingsFilter, ListingsSortBy} from "./utils/enums.sol";
 contract EzcrowRamp is CurrencySettingsHandler, TokenFactory, WhitelistedUsersDatabaseHandler {
     using Strings for string;
 
-    error InvalidListingIdsLength(uint256 requiredLength);
-
-    error InvalidOrderIdsLength(uint256 requiredLength);
-
     IFiatTokenPairHandler private fiatTokenPairHandler;
 
     /**
@@ -31,62 +27,30 @@ contract EzcrowRamp is CurrencySettingsHandler, TokenFactory, WhitelistedUsersDa
         fiatTokenPairHandler = IFiatTokenPairHandler(fiatTokenPairHandlerAddress);
     }
 
-    function addToken(
-        address token,
-        uint256[] memory initialListingIds,
-        uint256[] memory initialOrderIds
-    ) external onlyOwner {
+    function addToken(address token) external onlyOwner {
         addTokenAddress(token);
-
-        address[] memory currencySettings = getAllCurrencySettingsAdrresses();
-
-        if (currencySettings.length != initialListingIds.length) {
-            revert InvalidListingIdsLength(currencySettings.length);
-        }
-
-        if (currencySettings.length != initialOrderIds.length) {
-            revert InvalidOrderIdsLength(currencySettings.length);
-        }
-
-        for (uint256 i = 0; i < currencySettings.length; i++) {
-            fiatTokenPairHandler.createFiatTokenPair(
-                address(this),
-                token,
-                currencySettings[i],
-                initialListingIds[i],
-                initialOrderIds[i]
-            );
-        }
     }
 
-    function addCurrencySettings(
-        string memory symbol,
-        uint8 decimals,
-        uint256[] memory initialListingIds,
-        uint256[] memory initialOrderIds
-    ) external onlyOwner {
+    function addCurrencySettings(string memory symbol, uint8 decimals) external onlyOwner {
         createCurrencySettings(symbol, decimals);
+    }
 
-        address currencySettinsAddress = getCurrencySettingsAddress(symbol);
-        address[] memory tokens = getAllTokenAddresses();
+    function connectFiatTokenPair(
+        string memory tokenSymbol,
+        string memory currencySymbol,
+        uint256 initialListingId,
+        uint256 initialOrderId
+    ) external onlyOwner {
+        address tokenAddress = getTokenAddress(tokenSymbol);
+        address currencySettingsAddress = getCurrencySettingsAddress(currencySymbol);
 
-        if (tokens.length != initialListingIds.length) {
-            revert InvalidListingIdsLength(tokens.length);
-        }
-
-        if (tokens.length != initialOrderIds.length) {
-            revert InvalidOrderIdsLength(tokens.length);
-        }
-
-        for (uint256 i = 0; i < tokens.length; i++) {
-            fiatTokenPairHandler.createFiatTokenPair(
-                address(this),
-                tokens[i],
-                currencySettinsAddress,
-                initialListingIds[i],
-                initialOrderIds[i]
-            );
-        }
+        fiatTokenPairHandler.createFiatTokenPair(
+            address(this),
+            tokenAddress,
+            currencySettingsAddress,
+            initialListingId,
+            initialOrderId
+        );
     }
 
     function createListing(

@@ -37,7 +37,7 @@ interface IListingsHandler {
 
     function getSortedListings(
         ListingsFilter filter,
-        ListingsSortBy sortType,
+        ListingsSortBy sortBy,
         SortDirection dir,
         uint256 offset,
         uint256 count,
@@ -47,7 +47,7 @@ interface IListingsHandler {
     function getSortedUserListings(
         address user,
         ListingsFilter filter,
-        ListingsSortBy sortType,
+        ListingsSortBy sortBy,
         SortDirection dir,
         uint256 offset,
         uint256 count,

@@ -11,11 +11,19 @@ import {Ownable} from "../utils/Ownable.sol";
 contract FiatTokenPairHandler is FiatTokenPairFactory, IFiatTokenPairHandler, Ownable {
     constructor(
         address fiatTokenPairDeployer,
+        address listingsKeyStorageDeployer,
         address listingsHandlerDeployer,
+        address ordersKeyStorageDeployer,
         address ordersHandlerDeployer,
         address owner
     )
-        FiatTokenPairFactory(fiatTokenPairDeployer, listingsHandlerDeployer, ordersHandlerDeployer)
+        FiatTokenPairFactory(
+            fiatTokenPairDeployer,
+            listingsKeyStorageDeployer,
+            listingsHandlerDeployer,
+            ordersKeyStorageDeployer,
+            ordersHandlerDeployer
+        )
         Ownable(owner)
     {}
 

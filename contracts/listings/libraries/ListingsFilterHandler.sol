@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {ListingAction} from "../enums.sol";
+import {ListingAction} from "../../utils/enums.sol";
 
-library Filtering {
-    function getFilteredIndex(
+library ListingsFilterHandler {
+    function getFilteredIds(
         mapping(uint256 => ListingAction) storage index,
         uint256[] memory idsArray,
         ListingAction action

@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import {ListingAction, ListingsSortBy, SortDirection, ListingsFilter} from "../utils/enums.sol";
 import {Listing} from "../utils/structs.sol";
 import {FixedPointMath} from "../utils/libraries/FixedPointMath.sol";
-import {Sorting} from "../utils/libraries/Sorting.sol";
+import {IdSortHandler} from "../utils/libraries/IdSortHandler.sol";
 import {Math} from "../utils/libraries/Math.sol";
 import {ArrayUtils} from "../utils/libraries/ArrayUtils.sol";
 import {ListingsFactory} from "./ListingsFactory.sol";
@@ -14,17 +14,15 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IListingsHandlerErrors} from "./interfaces/IListingsHandlerErrors.sol";
 import {IListingsHandler} from "./interfaces/IListingsHandler.sol";
 import {IListingsEventHandler} from "./interfaces/IListingsEventHandler.sol";
+import {IListingsKeyStorage} from "./interfaces/IListingsKeyStorage.sol";
+import {IListingsKeyStorageDeployer} from "./interfaces/IListingsKeyStorageDeployer.sol";
 
-contract ListingsHandler is
-    ListingsKeyStorage,
-    ListingsFactory,
-    IListingsHandler,
-    IListingsHandlerErrors,
-    Ownable
-{
+contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerErrors, Ownable {
     using ArrayUtils for uint256[];
 
     IListingsEventHandler private eventHandler;
+
+    IListingsKeyStorage private listingsKeyStorage;
 
     /**
      * Events
@@ -79,9 +77,13 @@ contract ListingsHandler is
     constructor(
         address owner,
         address _eventHandler,
+        address listingsKeyStorageDeployer,
         uint256 initalId
     ) Ownable(owner) ListingsFactory(initalId) {
         eventHandler = IListingsEventHandler(_eventHandler);
+        listingsKeyStorage = IListingsKeyStorage(
+            IListingsKeyStorageDeployer(listingsKeyStorageDeployer).deploy(address(this))
+        );
     }
 
     /**
@@ -97,7 +99,7 @@ contract ListingsHandler is
             listing.availableTokenAmount += amount;
         }
 
-        updateKeys(listing);
+        listingsKeyStorage.updateKeys(listing);
     }
 
     function subtractListingAvailableAmount(
@@ -110,7 +112,7 @@ contract ListingsHandler is
             listing.availableTokenAmount -= amount;
         }
 
-        updateKeys(listing);
+        listingsKeyStorage.updateKeys(listing);
     }
 
     /**
@@ -137,7 +139,7 @@ contract ListingsHandler is
             creator
         );
 
-        initializeKeys(listing);
+        listingsKeyStorage.initializeKeys(listing);
         emit ListingCreated(listing);
         eventHandler.onListingCreated(listing);
     }
@@ -166,7 +168,7 @@ contract ListingsHandler is
         listing.minPricePerOrder = minPricePerOrder;
         listing.maxPricePerOrder = maxPricePerOrder;
 
-        updateKeys(listing);
+        listingsKeyStorage.updateKeys(listing);
         emit ListingUpdated(listing);
         eventHandler.onListingUpdated(previousAmount, listing);
     }
@@ -195,12 +197,12 @@ contract ListingsHandler is
     }
 
     function getUserListings(address user) external view returns (Listing[] memory) {
-        return _getListingsFromIds(getUserListingIds(user));
+        return _getListingsFromIds(listingsKeyStorage.getUserListingIds(user));
     }
 
     function getSortedListings(
         ListingsFilter filter,
-        ListingsSortBy sortType,
+        ListingsSortBy sortBy,
         SortDirection dir,
         uint256 offset,
         uint256 count,
@@ -211,21 +213,25 @@ contract ListingsHandler is
             .sliceFromEnd(maxListings);
 
         return
-            _getListingsFromIds(sortAndFilterIds(ids, filter, sortType, dir).slice(offset, count));
+            _getListingsFromIds(
+                listingsKeyStorage.sortAndFilterIds(ids, filter, sortBy, dir).slice(offset, count)
+            );
     }
 
     function getSortedUserListings(
         address user,
         ListingsFilter filter,
-        ListingsSortBy sortType,
+        ListingsSortBy sortBy,
         SortDirection dir,
         uint256 offset,
         uint256 count,
         uint256 maxListings
     ) external view returns (Listing[] memory) {
-        uint256[] memory ids = getUserListingIds(user).sliceFromEnd(maxListings);
+        uint256[] memory ids = listingsKeyStorage.getUserListingIds(user).sliceFromEnd(maxListings);
 
         return
-            _getListingsFromIds(sortAndFilterIds(ids, filter, sortType, dir).slice(offset, count));
+            _getListingsFromIds(
+                listingsKeyStorage.sortAndFilterIds(ids, filter, sortBy, dir).slice(offset, count)
+            );
     }
 }

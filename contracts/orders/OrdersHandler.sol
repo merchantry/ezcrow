@@ -2,9 +2,11 @@
 pragma solidity 0.8.20;
 
 import {Listing, Order} from "../utils/structs.sol";
-import {OrderStatus, UserRole, SortDirection} from "../utils/enums.sol";
+import {OrderStatus, UserRole, SortDirection, OrdersFilter} from "../utils/enums.sol";
 import {OrdersFactory} from "./OrdersFactory.sol";
 import {OrdersKeyStorage} from "./OrdersKeyStorage.sol";
+import {IOrdersKeyStorage} from "./interfaces/IOrdersKeyStorage.sol";
+import {IOrdersKeyStorageDeployer} from "./interfaces/IOrdersKeyStorageDeployer.sol";
 import {Ownable} from "../utils/Ownable.sol";
 import {OrderStatusHandler} from "./libraries/OrderStatusHandler.sol";
 import {ArrayUtils} from "../utils/libraries/ArrayUtils.sol";
@@ -12,17 +14,13 @@ import {IOrdersHandler} from "./interfaces/IOrdersHandler.sol";
 import {IOrdersEventHandler} from "./interfaces/IOrdersEventHandler.sol";
 import {IOrdersHandlerErrors} from "./interfaces/IOrdersHandlerErrors.sol";
 
-contract OrdersHandler is
-    OrdersFactory,
-    OrdersKeyStorage,
-    IOrdersHandler,
-    IOrdersHandlerErrors,
-    Ownable
-{
+contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, Ownable {
     using ArrayUtils for uint256[];
     using OrderStatusHandler for OrderStatus[];
 
     IOrdersEventHandler private eventHandler;
+
+    IOrdersKeyStorage private ordersKeyStorage;
 
     /**
      * Events
@@ -60,9 +58,13 @@ contract OrdersHandler is
     constructor(
         address owner,
         address _eventHandler,
+        address ordersKeyStorageDeployer,
         uint256 initialId
     ) Ownable(owner) OrdersFactory(initialId) {
         eventHandler = IOrdersEventHandler(_eventHandler);
+        ordersKeyStorage = IOrdersKeyStorage(
+            IOrdersKeyStorageDeployer(ordersKeyStorageDeployer).deploy(address(this))
+        );
     }
 
     /**
@@ -82,7 +84,7 @@ contract OrdersHandler is
             creator
         );
 
-        initializeKeys(order, listing);
+        ordersKeyStorage.initializeKeys(order, listing);
         emit OrderCreated(order);
     }
 
@@ -95,6 +97,7 @@ contract OrdersHandler is
 
         order.statusHistory.push(nextStatus);
         eventHandler.onOrderAccepted(order);
+        ordersKeyStorage.updateKeys(order);
     }
 
     function rejectOrder(uint256 id, address sender) external onlyOwner notCancelled(id) {
@@ -106,6 +109,7 @@ contract OrdersHandler is
 
         order.statusHistory.push(nextStatus);
         eventHandler.onOrderRejected(order);
+        ordersKeyStorage.updateKeys(order);
     }
 
     function acceptDispute(uint256 id, address sender) external onlyOwner orderInDispute(id) {
@@ -117,6 +121,7 @@ contract OrdersHandler is
 
         order.statusHistory.push(nextStatus);
         eventHandler.onOrderRejected(order);
+        ordersKeyStorage.updateKeys(order);
     }
 
     function rejectDispute(uint256 id, address sender) external onlyOwner orderInDispute(id) {
@@ -128,6 +133,7 @@ contract OrdersHandler is
 
         order.statusHistory.push(nextStatus);
         eventHandler.onOrderAccepted(order);
+        ordersKeyStorage.updateKeys(order);
     }
 
     /**
@@ -142,22 +148,26 @@ contract OrdersHandler is
     }
 
     function getListingOrders(uint256 listingId) public view returns (Order[] memory) {
-        return _getOrdersFromIds(getListingOrderIds(listingId));
+        return _getOrdersFromIds(ordersKeyStorage.getListingOrderIds(listingId));
     }
 
     function getUserOrders(address user) external view returns (Order[] memory) {
-        return _getOrdersFromIds(getUserOrderIds(user));
+        return _getOrdersFromIds(ordersKeyStorage.getUserOrderIds(user));
     }
 
     function getSortedUserOrders(
         address user,
+        OrdersFilter filter,
         SortDirection dir,
         uint256 offset,
         uint256 count,
         uint256 maxOrders
     ) external view returns (Order[] memory) {
-        uint256[] memory ids = getUserOrderIds(user).sliceFromEnd(maxOrders);
+        uint256[] memory ids = ordersKeyStorage.getUserOrderIds(user).sliceFromEnd(maxOrders);
 
-        return _getOrdersFromIds(sortIds(ids, dir).slice(offset, count));
+        return
+            _getOrdersFromIds(
+                ordersKeyStorage.sortAndFilterIds(ids, filter, dir).slice(offset, count)
+            );
     }
 }

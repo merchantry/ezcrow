@@ -3,21 +3,21 @@ pragma solidity 0.8.20;
 
 import {SortDirection} from "../enums.sol";
 
-library Sorting {
-    function getSortedIndex(
+library IdSortHandler {
+    function getSortedIds(
         mapping(uint256 => uint256) storage index,
-        uint256[] memory idsArray,
+        uint256[] memory ids,
         SortDirection direction
     ) internal view returns (uint256[] memory) {
-        uint256 count = idsArray.length;
+        uint256 count = ids.length;
 
         if (direction == SortDirection.Desc) {
-            quickSortDesc(idsArray, index, int(0), int(count - 1));
+            quickSortDesc(ids, index, int(0), int(count - 1));
         } else if (direction == SortDirection.Asc) {
-            quickSortAsc(idsArray, index, int(0), int(count - 1));
+            quickSortAsc(ids, index, int(0), int(count - 1));
         }
 
-        return idsArray;
+        return ids;
     }
 
     function quickSortDesc(
