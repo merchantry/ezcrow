@@ -16,7 +16,7 @@ describe('ListingsKeyStorage', function () {
 
     const listingsKeyStorage = await ethers
       .getContractFactory('ListingsKeyStorage')
-      .then((contract) => contract.deploy(owner.address));
+      .then(contract => contract.deploy(owner.address));
 
     return { listingsKeyStorage, owner, otherUser };
   }
@@ -85,7 +85,7 @@ describe('ListingsKeyStorage', function () {
           price: listing.price * 3,
         },
       ];
-      const listingIds = listings.map((listing) => listing.id);
+      const listingIds = listings.map(listing => listing.id);
 
       for (const listing of listings) {
         await listingsKeyStorage.initializeKeys(listing);
@@ -124,7 +124,7 @@ describe('ListingsKeyStorage', function () {
           totalTokenAmount: listing.totalTokenAmount * 3,
         },
       ];
-      const listingIds = listings.map((listing) => listing.id);
+      const listingIds = listings.map(listing => listing.id);
 
       for (const listing of listings) {
         await listingsKeyStorage.initializeKeys(listing);
@@ -160,7 +160,7 @@ describe('ListingsKeyStorage', function () {
           minPricePerOrder: listing.minPricePerOrder / 2,
         },
       ];
-      const listingIds = listings.map((listing) => listing.id);
+      const listingIds = listings.map(listing => listing.id);
 
       for (const listing of listings) {
         await listingsKeyStorage.initializeKeys(listing);
@@ -219,7 +219,7 @@ describe('ListingsKeyStorage', function () {
         },
       ];
 
-      const listingIds = listings.map((listing) => listing.id);
+      const listingIds = listings.map(listing => listing.id);
 
       for (const listing of listings) {
         await listingsKeyStorage.initializeKeys(listing);

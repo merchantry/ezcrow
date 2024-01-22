@@ -33,7 +33,7 @@ describe('FiatTokenPair', function () {
 
     const token = await ethers
       .getContractFactory('TestToken')
-      .then((contract) =>
+      .then(contract =>
         contract.deploy(TOKEN_NAME, TOKEN_SYMBOL, TOKEN_DECIMALS)
       );
 
@@ -41,11 +41,11 @@ describe('FiatTokenPair', function () {
 
     const currencySettings = await ethers
       .getContractFactory('CurrencySettings')
-      .then((contract) => contract.deploy('USD', CURRENCY_DECIMALS));
+      .then(contract => contract.deploy('USD', CURRENCY_DECIMALS));
 
     const fiatTokenPair = await ethers
       .getContractFactory('FiatTokenPair')
-      .then((contract) =>
+      .then(contract =>
         contract.deploy(
           'TT/USD',
           token.target,
@@ -56,11 +56,11 @@ describe('FiatTokenPair', function () {
 
     const listingsKeyStorageDeployer = await ethers
       .getContractFactory('ListingsKeyStorageDeployer')
-      .then((contract) => contract.deploy());
+      .then(contract => contract.deploy());
 
     const listingsHandler = await ethers
       .getContractFactory('ListingsHandler')
-      .then((contract) =>
+      .then(contract =>
         contract.deploy(
           owner.address,
           fiatTokenPair.target,
@@ -71,11 +71,11 @@ describe('FiatTokenPair', function () {
 
     const ordersKeyStorageDeployer = await ethers
       .getContractFactory('OrdersKeyStorageDeployer')
-      .then((contract) => contract.deploy());
+      .then(contract => contract.deploy());
 
     const ordersHandler = await ethers
       .getContractFactory('OrdersHandler')
-      .then((contract) =>
+      .then(contract =>
         contract.deploy(
           owner.address,
           fiatTokenPair.target,
@@ -1137,7 +1137,7 @@ describe('FiatTokenPair', function () {
       async function advanceOrderToStatus(listingAction, orderId, orderStatus) {
         const orderStatusIndex = Object.keys(
           TESTS.acceptOrder[listingAction]
-        ).findIndex((status) => Number(status) === orderStatus);
+        ).findIndex(status => Number(status) === orderStatus);
         const users = [listingCreator, orderCreator];
 
         for (let i = 0; i < orderStatusIndex; i++) {

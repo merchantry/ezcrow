@@ -20,7 +20,7 @@ const INITIAL_ORDER_ID = 480000;
 
 const signData = (signer, contract, message) =>
   getDomain(contract)
-    .then((domain) =>
+    .then(domain =>
       signer.signTypedData(domain, { OrderActionPermit }, message)
     )
     .then(ethers.Signature.from);
@@ -31,37 +31,37 @@ describe('EzcrowRamp', function () {
 
     const fiatTokenPairDeployer = await ethers
       .getContractFactory('FiatTokenPairDeployer')
-      .then((contract) => contract.deploy());
+      .then(contract => contract.deploy());
 
     const listingsKeyStorageDeployer = await ethers
       .getContractFactory('ListingsKeyStorageDeployer')
-      .then((contract) => contract.deploy());
+      .then(contract => contract.deploy());
 
     const listingsHandlerDeployer = await ethers
       .getContractFactory('ListingsHandlerDeployer')
-      .then((contract) => contract.deploy());
+      .then(contract => contract.deploy());
 
     const ordersKeyStorageDeployer = await ethers
       .getContractFactory('OrdersKeyStorageDeployer')
-      .then((contract) => contract.deploy());
+      .then(contract => contract.deploy());
 
     const ordersHandlerDeployer = await ethers
       .getContractFactory('OrdersHandlerDeployer')
-      .then((contract) => contract.deploy());
+      .then(contract => contract.deploy());
 
     const token = await ethers
       .getContractFactory('TestToken')
-      .then((contract) =>
+      .then(contract =>
         contract.deploy(TOKEN_NAME, TOKEN_SYMBOL, TOKEN_DECIMALS)
       );
 
     const ezcrowRamp = await ethers
       .getContractFactory('EzcrowRamp')
-      .then((contract) => contract.deploy());
+      .then(contract => contract.deploy());
 
     const fiatTokenPairHandler = await ethers
       .getContractFactory('FiatTokenPairHandler')
-      .then((contract) =>
+      .then(contract =>
         contract.deploy(
           fiatTokenPairDeployer.target,
           listingsKeyStorageDeployer.target,
@@ -76,7 +76,7 @@ describe('EzcrowRamp', function () {
 
     const ezcrowRampQuery = await ethers
       .getContractFactory('EzcrowRampQuery')
-      .then((contract) => contract.deploy(fiatTokenPairHandler.target));
+      .then(contract => contract.deploy(fiatTokenPairHandler.target));
 
     return {
       ezcrowRamp,
@@ -272,7 +272,7 @@ describe('EzcrowRamp', function () {
 
       const newToken = await ethers
         .getContractFactory('TestToken')
-        .then((contract) =>
+        .then(contract =>
           contract.deploy(TOKEN_NAME, TOKEN_SYMBOL, TOKEN_DECIMALS)
         );
 
@@ -531,10 +531,10 @@ describe('EzcrowRamp', function () {
     beforeEach(async function () {
       const { ezcrowRamp, owner } = this;
       const tokens = await Promise.all(
-        TOKENS_TO_ADD.map((tokenSymbol) =>
+        TOKENS_TO_ADD.map(tokenSymbol =>
           ethers
             .getContractFactory('TestToken')
-            .then((contract) =>
+            .then(contract =>
               contract.deploy(TOKEN_NAME, tokenSymbol, TOKEN_DECIMALS)
             )
         )

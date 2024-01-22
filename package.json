@@ -3,7 +3,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
-    "prettier": "prettier --write --plugin=prettier-plugin-solidity contracts/**/*.sol",
+    "prettier": "prettier --write --plugin=prettier-plugin-solidity contracts/**/*.sol test/**/*.js",
     "lint": "eslint --fix --ext .js,.test.js"
   },
   "devDependencies": {

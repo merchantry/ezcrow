@@ -17,7 +17,7 @@ describe('OrdersKeyStorage', function () {
 
     const ordersKeyStorage = await ethers
       .getContractFactory('OrdersKeyStorage')
-      .then((contract) => contract.deploy(owner.address));
+      .then(contract => contract.deploy(owner.address));
 
     return { ordersKeyStorage, owner, otherUser };
   }
@@ -86,7 +86,7 @@ describe('OrdersKeyStorage', function () {
         listing.id
       );
 
-      expect(listingOrderIds).to.deep.equal(orders.map((order) => order.id));
+      expect(listingOrderIds).to.deep.equal(orders.map(order => order.id));
     });
 
     it('initializes order creator keys', async function () {
@@ -104,9 +104,7 @@ describe('OrdersKeyStorage', function () {
         orderCreator.address
       );
 
-      expect(orderCreatorOrderIds).to.deep.equal(
-        orders.map((order) => order.id)
-      );
+      expect(orderCreatorOrderIds).to.deep.equal(orders.map(order => order.id));
     });
 
     it('initializes listing creator keys', async function () {
@@ -120,7 +118,7 @@ describe('OrdersKeyStorage', function () {
       );
 
       expect(listingCreatorOrderIds).to.deep.equal(
-        orders.map((order) => order.id)
+        orders.map(order => order.id)
       );
     });
 
@@ -133,14 +131,12 @@ describe('OrdersKeyStorage', function () {
       await ordersKeyStorage.initializeKeys(orders[1], listing);
 
       const sortedIds = await ordersKeyStorage.sortAndFilterIds(
-        orders.map((order) => order.id),
+        orders.map(order => order.id),
         OrdersFilter.All,
         SortDirection.Desc
       );
 
-      expect(sortedIds).to.deep.equal(
-        orders.map((order) => order.id).reverse()
-      );
+      expect(sortedIds).to.deep.equal(orders.map(order => order.id).reverse());
     });
 
     it('initializes order status keys', async function () {
@@ -193,7 +189,7 @@ describe('OrdersKeyStorage', function () {
           ],
         },
       ];
-      const orderIds = orders.map((order) => order.id);
+      const orderIds = orders.map(order => order.id);
 
       for (const order of orders) {
         await ordersKeyStorage.initializeKeys(order, listing);

@@ -9,7 +9,7 @@ const multiplyByTenPow = (n, exp) => {
   return n * 10n ** absExp;
 };
 
-const getOrderCurrentStatus = (order) => {
+const getOrderCurrentStatus = order => {
   const { statusHistory } = order;
   return Number(statusHistory[statusHistory.length - 1]);
 };

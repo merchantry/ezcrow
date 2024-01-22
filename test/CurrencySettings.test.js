@@ -13,7 +13,7 @@ describe('CurrencySettings', function () {
 
     const currencySettings = await ethers
       .getContractFactory('CurrencySettings')
-      .then((contract) => contract.deploy(CURRENCY_SYMBOL, CURRENCY_DECIMALS));
+      .then(contract => contract.deploy(CURRENCY_SYMBOL, CURRENCY_DECIMALS));
 
     return { currencySettings, owner, otherUser };
   }

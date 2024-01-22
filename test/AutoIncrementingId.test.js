@@ -13,7 +13,7 @@ describe('AutoIncrementingId', function () {
 
     const autoIncrementingId = await ethers
       .getContractFactory('AutoIncrementingId')
-      .then((contract) => contract.deploy(INITIAL_ID));
+      .then(contract => contract.deploy(INITIAL_ID));
 
     return { autoIncrementingId, owner, otherUser };
   }
@@ -59,7 +59,7 @@ describe('AutoIncrementingId', function () {
         return id;
       });
 
-      expect(ids).to.deep.equal(newArray(length, (i) => INITIAL_ID + i));
+      expect(ids).to.deep.equal(newArray(length, i => INITIAL_ID + i));
     });
 
     it('reverts if not accessed by owner', async function () {

@@ -10,7 +10,7 @@ describe('WhitelistedUsersDatabase', function () {
 
     const whitelistedUsersDatabase = await ethers
       .getContractFactory('WhitelistedUsersDatabase')
-      .then((contract) => contract.deploy());
+      .then(contract => contract.deploy());
 
     return { whitelistedUsersDatabase, owner, userA, userB };
   }

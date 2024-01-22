@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 
-const listingStruct = (listing) => (listingStruct) => {
-  Object.keys(listing).forEach((key) => {
+const listingStruct = listing => listingStruct => {
+  Object.keys(listing).forEach(key => {
     expect(
       listing[key],
       `listing ${key}: ${listingStruct[key]} does not match ${listing[key]}`
@@ -11,8 +11,8 @@ const listingStruct = (listing) => (listingStruct) => {
   return true;
 };
 
-const orderStruct = (order) => (orderStruct) => {
-  Object.keys(order).forEach((key) => {
+const orderStruct = order => orderStruct => {
+  Object.keys(order).forEach(key => {
     if (key === 'statusHistory') {
       order.statusHistory.forEach((status, i) => {
         expect(
