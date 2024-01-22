@@ -9,16 +9,24 @@ import {TokenFactory} from "./token/TokenFactory.sol";
 import {WhitelistedUsersDatabaseHandler} from "./whitelistedUsersDatabase/WhitelistedUsersDatabaseHandler.sol";
 import {IListingsHandler} from "./listings/interfaces/IListingsHandler.sol";
 import {ICurrencySettings} from "./currencySettings/interfaces/ICurrencySettings.sol";
+import {OrderActionSignable} from "./OrderActionSignable.sol";
 
 import {ListingAction} from "./utils/structs.sol";
 import {Strings} from "./utils/libraries/Strings.sol";
 import {Listing, Order} from "./utils/structs.sol";
 import {SortDirection, ListingsFilter, ListingsSortBy} from "./utils/enums.sol";
 
-contract EzcrowRamp is CurrencySettingsHandler, TokenFactory, WhitelistedUsersDatabaseHandler {
+contract EzcrowRamp is
+    CurrencySettingsHandler,
+    TokenFactory,
+    WhitelistedUsersDatabaseHandler,
+    OrderActionSignable
+{
     using Strings for string;
 
     IFiatTokenPairHandler private fiatTokenPairHandler;
+
+    constructor() OrderActionSignable("EzcrowRamp") {}
 
     /**
      * External functions
@@ -145,24 +153,36 @@ contract EzcrowRamp is CurrencySettingsHandler, TokenFactory, WhitelistedUsersDa
     }
 
     function acceptOrder(
+        address owner,
         string memory tokenSymbol,
         string memory currencySymbol,
-        uint256 orderId
+        uint256 orderId,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external {
+        validateSignature(owner, tokenSymbol, currencySymbol, orderId, true, v, r, s);
+
         fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).acceptOrder(
             orderId,
-            _msgSender()
+            owner
         );
     }
 
     function rejectOrder(
+        address owner,
         string memory tokenSymbol,
         string memory currencySymbol,
-        uint256 orderId
+        uint256 orderId,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external {
+        validateSignature(owner, tokenSymbol, currencySymbol, orderId, false, v, r, s);
+
         fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).rejectOrder(
             orderId,
-            _msgSender()
+            owner
         );
     }
 
