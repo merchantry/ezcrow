@@ -88,14 +88,21 @@ contract FiatTokenPair is
             );
     }
 
-    function listingHasActiveOrders(uint256 listingId) private view returns (bool) {
+    function allOrdersHaveStatus(
+        uint256 listingId,
+        OrderStatus[] memory statuses
+    ) private view returns (bool) {
         Order[] memory orders = ordersHandler.getListingOrders(listingId);
 
         for (uint256 i = 0; i < orders.length; i++) {
-            if (orders[i].statusHistory.getCurrentStatus() != OrderStatus.Cancelled) return true;
+            OrderStatus orderStatus = orders[i].statusHistory.getCurrentStatus();
+
+            if (!statuses.statusExists(orderStatus)) {
+                return false;
+            }
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -134,7 +141,7 @@ contract FiatTokenPair is
     function onListingDeleted(Listing memory listing) external onlyOnListingEvent {
         if (listing.action != ListingAction.Sell) return;
 
-        transferToUser(listing.creator, listing.totalTokenAmount);
+        transferToUser(listing.creator, listing.availableTokenAmount);
     }
 
     /**
@@ -161,9 +168,22 @@ contract FiatTokenPair is
         }
     }
 
-    function beforeListingEdit(uint256 listingId) external view {
-        if (listingHasActiveOrders(listingId)) {
-            revert ListingCannotBeEditedOrRemoved(listingId);
+    function beforeListingUpdate(uint256 listingId) external view {
+        OrderStatus[] memory possibleOrders = new OrderStatus[](1);
+        possibleOrders[0] = OrderStatus.Cancelled;
+
+        if (!allOrdersHaveStatus(listingId, possibleOrders)) {
+            revert ListingCannotBeUpdated(listingId);
+        }
+    }
+
+    function beforeListingDelete(uint256 listingId) external view {
+        OrderStatus[] memory possibleOrders = new OrderStatus[](2);
+        possibleOrders[0] = OrderStatus.Cancelled;
+        possibleOrders[1] = OrderStatus.Completed;
+
+        if (!allOrdersHaveStatus(listingId, possibleOrders)) {
+            revert ListingCannotBeDeleted(listingId);
         }
     }
 

@@ -637,10 +637,7 @@ describe('FiatTokenPair', function () {
             listingCreator.address
           )
         )
-          .to.be.revertedWithCustomError(
-            fiatTokenPair,
-            'ListingCannotBeEditedOrRemoved'
-          )
+          .to.be.revertedWithCustomError(fiatTokenPair, 'ListingCannotBeUpdated')
           .withArgs(INITIAL_LISTING_ID);
       });
 
@@ -1043,7 +1040,7 @@ describe('FiatTokenPair', function () {
         )
           .to.be.revertedWithCustomError(
             fiatTokenPair,
-            'ListingCannotBeEditedOrRemoved'
+            'ListingCannotBeDeleted'
           )
           .withArgs(INITIAL_LISTING_ID);
       });
@@ -1078,6 +1075,46 @@ describe('FiatTokenPair', function () {
         expect(listing.isDeleted).to.be.true;
       });
 
+      it('deletes listing if all orders are completed', async function () {
+        const {
+          fiatTokenPair,
+          listingsHandler,
+          ordersHandler,
+          token,
+          owner: listingCreator,
+          otherUser: orderCreator,
+        } = this;
+        const { tokenAmount } = this.listingData;
+        const users = [listingCreator, orderCreator];
+
+        await ordersHandler.createOrder(
+          INITIAL_LISTING_ID,
+          tokenAmount,
+          orderCreator.address
+        );
+
+        await token.mint(orderCreator.address, tokenAmount);
+        await token
+          .connect(orderCreator)
+          .approve(fiatTokenPair.target, tokenAmount);
+
+        for (let i = 0; i < 4; i++) {
+          await ordersHandler.acceptOrder(
+            INITIAL_ORDER_ID,
+            users[i % 2].address
+          );
+        }
+
+        await listingsHandler.deleteListing(
+          INITIAL_LISTING_ID,
+          listingCreator.address
+        );
+
+        const listing = await listingsHandler.getListing(INITIAL_LISTING_ID);
+
+        expect(listing.isDeleted).to.be.true;
+      });
+
       it('reverts if listing is deleted', async function () {
         const { listingsHandler, owner } = this;
 
@@ -1091,25 +1128,50 @@ describe('FiatTokenPair', function () {
       });
 
       it('returns tokens to the listing creator on sell listing', async function () {
-        const { fiatTokenPair, listingsHandler, token, owner } = this;
+        const {
+          fiatTokenPair,
+          listingsHandler,
+          ordersHandler,
+          token,
+          owner: listingCreator,
+          otherUser: orderCreator,
+        } = this;
         const { price, tokenAmount, min, max } = this.listingData;
+        const orderAmount = this.listingData.tokenAmount / 2n;
+        const users = [listingCreator, orderCreator];
 
         await token.approve(fiatTokenPair.target, tokenAmount);
         await listingsHandler.createListing(
           ListingAction.Sell,
           price,
           tokenAmount,
-          min,
+          min / 2n,
           max,
-          owner.address
+          listingCreator.address
         );
 
+        await ordersHandler.createOrder(
+          INITIAL_LISTING_ID + 1,
+          orderAmount,
+          orderCreator.address
+        );
+
+        for (let i = 0; i < 3; i++) {
+          await ordersHandler.acceptOrder(
+            INITIAL_ORDER_ID,
+            users[i % 2].address
+          );
+        }
+
         await expect(
-          listingsHandler.deleteListing(INITIAL_LISTING_ID + 1, owner.address)
+          listingsHandler.deleteListing(
+            INITIAL_LISTING_ID + 1,
+            listingCreator.address
+          )
         ).to.changeTokenBalances(
           token,
-          [owner, fiatTokenPair],
-          [tokenAmount, -tokenAmount]
+          [listingCreator, fiatTokenPair],
+          [orderAmount, -orderAmount]
         );
       });
     });

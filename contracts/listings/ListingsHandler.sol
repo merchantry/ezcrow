@@ -52,8 +52,14 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
         _;
     }
 
-    modifier canBeUpdatedOrRemoved(uint256 id) {
-        eventHandler.beforeListingEdit(id);
+    modifier canBeUpdated(uint256 id) {
+        eventHandler.beforeListingUpdate(id);
+
+        _;
+    }
+
+    modifier canBeDeleted(uint256 id) {
+        eventHandler.beforeListingDelete(id);
 
         _;
     }
@@ -155,7 +161,7 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
         external
         onlyOwner
         notDeleted(id)
-        canBeUpdatedOrRemoved(id)
+        canBeUpdated(id)
         isOwnerOfListing(id, sender)
         validListingData(price, totalTokenAmount, minPricePerOrder, maxPricePerOrder)
     {
@@ -176,7 +182,7 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
     function deleteListing(
         uint256 id,
         address sender
-    ) external onlyOwner notDeleted(id) canBeUpdatedOrRemoved(id) isOwnerOfListing(id, sender) {
+    ) external onlyOwner notDeleted(id) canBeDeleted(id) isOwnerOfListing(id, sender) {
         Listing storage listing = _getListing(id);
 
         listing.isDeleted = true;

@@ -6,7 +6,9 @@ interface IListingsEventHandlerErrors {
 
     error ListingMinPerOrderIsZero();
 
-    error ListingCannotBeEditedOrRemoved(uint256 listingId);
+    error ListingCannotBeUpdated(uint256 listingId);
+
+    error ListingCannotBeDeleted(uint256 listingId);
 
     error ListingMinPerOrderGreaterThanMaxPerOrder(
         uint256 minPricePerOrder,

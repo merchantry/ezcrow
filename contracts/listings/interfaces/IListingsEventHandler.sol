@@ -17,5 +17,7 @@ interface IListingsEventHandler {
         uint256 maxPricePerOrder
     ) external view;
 
-    function beforeListingEdit(uint256 id) external view;
+    function beforeListingUpdate(uint256 id) external view;
+
+    function beforeListingDelete(uint256 id) external view;
 }
