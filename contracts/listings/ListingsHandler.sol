@@ -95,6 +95,11 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
     /**
      * On Event functions
      */
+
+    /**
+     * @dev Only callable by the event handler. Adds the amount to the listing's
+     * availableTokenAmount.
+     */
     function addListingAvailableAmount(
         uint256 listingId,
         uint256 amount
@@ -108,6 +113,10 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
         listingsKeyStorage.updateKeys(listing);
     }
 
+    /**
+     * @dev Only callable by the event handler. Subtracts the amount from the listing's
+     * availableTokenAmount.
+     */
     function subtractListingAvailableAmount(
         uint256 listingId,
         uint256 amount
@@ -123,6 +132,20 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
 
     /**
      * External functions
+     */
+
+    /**
+     * @dev Only callable by the owner contract. Creates a new listing and
+     * emits a ListingCreated event. Sends the data to the eventHandler to
+     * validate. The eventHandler will revert if the data is invalid.
+     * Initializes the listing's keys for easy sorting and filtering.
+     *
+     * @param action ListingAction whether the creator is buying or selling tokens
+     * @param price Price of each token in fiat currency
+     * @param totalTokenAmount Total amount of tokens to be bought or sold
+     * @param minPricePerOrder Minimum amount of fiat currency that can be accepted per order
+     * @param maxPricePerOrder Maximum amount of fiat currency that can be accepted per order
+     * @param creator Address of the listing creator
      */
     function createListing(
         ListingAction action,
@@ -150,6 +173,21 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
         eventHandler.onListingCreated(listing);
     }
 
+    /**
+     * @dev Only callable by the owner contract. Updates a listing and
+     * emits a ListingUpdated event. Sends the data to the eventHandler to
+     * validate. The eventHandler will revert if the data is invalid.
+     * Updates the listing's keys for easy sorting and filtering.
+     * Will check through eventHandler if the listing can be updated and revert
+     * if it can't.
+     *
+     * @param id of the listing to be updated
+     * @param price Price of each token in fiat currency
+     * @param totalTokenAmount Total amount of tokens to be bought or sold
+     * @param minPricePerOrder Minimum amount of fiat currency that can be accepted per order
+     * @param maxPricePerOrder Maximum amount of fiat currency that can be accepted per order
+     * @param sender Address of the user interacting with the listing
+     */
     function updateListing(
         uint256 id,
         uint256 price,
@@ -179,6 +217,14 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
         eventHandler.onListingUpdated(previousAmount, listing);
     }
 
+    /**
+     * @dev Only callable by the owner contract. Deletes a listing and
+     * emits a ListingDeleted event. Will check through eventHandler if the
+     * listing can be deleted and revert if it can't.
+     *
+     * @param id of the listing to be deleted
+     * @param sender Address of the listing creator
+     */
     function deleteListing(
         uint256 id,
         address sender
@@ -198,14 +244,33 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
         return _getListing(id);
     }
 
+    /**
+     * @dev Returns all listings
+     */
     function getListings() external view returns (Listing[] memory) {
         return _getListings();
     }
 
+    /**
+     * @dev Returns all listings for a specific user
+     */
     function getUserListings(address user) external view returns (Listing[] memory) {
         return _getListingsFromIds(listingsKeyStorage.getUserListingIds(user));
     }
 
+    /**
+     * @dev Returns a sorted and filtered array of listings based on the
+     * provided parameters.
+     *
+     * @param filter ListingsFilter to apply
+     * @param sortBy ListingsSortBy field to sort by
+     * @param dir SortDirection direction to sort by
+     * @param offset Offset to start slice from
+     * @param count Maximum amount of listings to return
+     * @param maxListings Maximum amount of listings to sort and filter. The
+     *  higher the number, more listings will be sorted through and the slower
+     *  the function will be. At high numbers it also fails.
+     */
     function getSortedListings(
         ListingsFilter filter,
         ListingsSortBy sortBy,
@@ -224,6 +289,20 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
             );
     }
 
+    /**
+     * @dev Returns a sorted and filtered array of listings for a specific user
+     * based on the provided parameters.
+     *
+     * @param user Address of the user to get listings for
+     * @param filter ListingsFilter to apply
+     * @param sortBy ListingsSortBy field to sort by
+     * @param dir SortDirection direction to sort by
+     * @param offset Offset to start slice from
+     * @param count Maximum amount of listings to return
+     * @param maxListings Maximum amount of listings to sort and filter. The
+     *  higher the number, more listings will be sorted through and the slower
+     *  the function will be. At high numbers it also fails.
+     */
     function getSortedUserListings(
         address user,
         ListingsFilter filter,

@@ -7,7 +7,7 @@ import {IWhitelistedUsersDatabase} from "./interfaces/IWhitelistedUsersDatabase.
 import {IWhitelistedUsersDatabaseErrors} from "./interfaces/IWhitelistedUsersDatabaseErrors.sol";
 
 abstract contract WhitelistedUsersDatabaseHandler is IWhitelistedUsersDatabaseErrors, Ownable {
-    address private whitelistedUsersDatabase;
+    IWhitelistedUsersDatabase private whitelistedUsersDatabase;
 
     modifier onlyWLUsers() {
         address sender = _msgSender();
@@ -19,24 +19,22 @@ abstract contract WhitelistedUsersDatabaseHandler is IWhitelistedUsersDatabaseEr
     }
 
     constructor() Ownable(_msgSender()) {
-        WhitelistedUsersDatabase newDatabase = new WhitelistedUsersDatabase();
-
-        whitelistedUsersDatabase = address(newDatabase);
+        whitelistedUsersDatabase = new WhitelistedUsersDatabase();
     }
 
     function addUserToWhitelist(address user) external onlyOwner {
-        IWhitelistedUsersDatabase(whitelistedUsersDatabase).add(user);
+        whitelistedUsersDatabase.add(user);
     }
 
     function removeUserFromWhiteList(address user) external onlyOwner {
-        IWhitelistedUsersDatabase(whitelistedUsersDatabase).remove(user);
+        whitelistedUsersDatabase.remove(user);
     }
 
     function isWhitelisted(address user) public view returns (bool) {
-        return IWhitelistedUsersDatabase(whitelistedUsersDatabase).isWhitelisted(user);
+        return whitelistedUsersDatabase.isWhitelisted(user);
     }
 
     function getWhitelistedUsersDatabaseAddress() external view returns (address) {
-        return whitelistedUsersDatabase;
+        return address(whitelistedUsersDatabase);
     }
 }

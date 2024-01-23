@@ -5,6 +5,9 @@ import {Ownable} from "../utils/Ownable.sol";
 import {ICurrencySettings} from "./interfaces/ICurrencySettings.sol";
 
 contract CurrencySettings is ICurrencySettings, Ownable {
+    /**
+     * @dev Currency symbol cannot be updated
+     */
     string private symbol_;
     uint8 private decimals_;
 

@@ -13,6 +13,9 @@ contract AutoIncrementingId is Ownable {
         initialId = _initialId;
     }
 
+    /**
+     * @dev Returns the current id and increments it by one
+     */
     function getNext() external onlyOwner returns (uint256) {
         uint256 _id = id;
         id++;
@@ -28,10 +31,16 @@ contract AutoIncrementingId is Ownable {
         return initialId;
     }
 
+    /**
+     * @dev Returns the total number of ids that have been generated
+     */
     function getCount() external view returns (uint256) {
         return id - initialId;
     }
 
+    /**
+     * @dev Returns true if the given id has been generated
+     */
     function exists(uint256 _id) external view returns (bool) {
         return initialId <= _id && _id < id;
     }

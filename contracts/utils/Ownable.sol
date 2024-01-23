@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
+/**
+ * @dev Contract used as a replacement for the Ownable contract from OpenZeppelin.
+ * It's a ligher version of the original Ownable contract, as it doesn't have the
+ * transferOwnership and renounceOwnership functions.
+ */
 abstract contract Ownable {
     address private _owner;
 

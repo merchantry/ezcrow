@@ -31,18 +31,53 @@ contract EzcrowRamp is
     /**
      * External functions
      */
+
+    /**
+     * @dev The initialization of fiatTokenPairHandler is done outside of the constructor
+     * since we need to pass this contract's address to the fiatTokenPairHandler constructor as the owner
+     * and we want to keep the deployment of that contract outside of this one.
+     */
     function setFiatTokenPairHandler(address fiatTokenPairHandlerAddress) external onlyOwner {
         fiatTokenPairHandler = IFiatTokenPairHandler(fiatTokenPairHandlerAddress);
     }
 
+    /**
+     * @dev Registers the ERC20 token from the given address as available for trading.
+     * The token is saved under a hash of its symbol, so a new token with the same symbol
+     * cannot be added.
+     * @param token address of the token to be added
+     */
     function addToken(address token) external onlyOwner {
         addTokenAddress(token);
     }
 
+    /**
+     * @dev Creates a new currency settings contract and registers currency as available for trading.
+     * The currency is saved under a hash of its symbol, so a new currency with the same symbol
+     * cannot be added.
+     *
+     * @param symbol Symbol of the currency to be added
+     * @param decimals Number of decimals of the currency to be added
+     */
     function addCurrencySettings(string memory symbol, uint8 decimals) external onlyOwner {
         createCurrencySettings(symbol, decimals);
     }
 
+    /**
+     * @dev Creates a new fiatTokenPair contract for the given token and currency symbols.
+     * The token and currency must be registered before calling this function. The initial listing
+     * and order ids are used to initialize the listings and orders handlers. Will also revert if
+     * a fiatTokenPair contract with the same token and currency symbols already exists.
+     *
+     * This function is kept separate from adding the token and currency settings since we want to
+     * create a fiatTokenPair contract for each token and currency pair. This function would
+     * fail if more than one pair is created in one call.
+     *
+     * @param tokenSymbol of the token to be traded in the pair
+     * @param currencySymbol of the currency to be traded in the pair
+     * @param initialListingId used by the listings handler to initialize the listings ids
+     * @param initialOrderId used by the orders handler to initialize the orders ids
+     */
     function connectFiatTokenPair(
         string memory tokenSymbol,
         string memory currencySymbol,
@@ -61,6 +96,14 @@ contract EzcrowRamp is
         );
     }
 
+    /**
+     * @dev Creates a new listing for the given token and currency symbols.
+     * The token and currency must be registered before calling this function.
+     * The listing is created in the fiatTokenPair contract for the given token and currency.
+     *
+     * @param tokenSymbol of the token to be traded in the pair
+     * @param currencySymbol of the currency to be traded in the pair
+     */
     function createListing(
         string memory tokenSymbol,
         string memory currencySymbol,
@@ -80,6 +123,22 @@ contract EzcrowRamp is
         );
     }
 
+    /**
+     * @dev Updates the listing with the given token and currency symbol and id with the given data.
+     * Both the current and new token and currency must be registered before calling this function.
+     * The listing is updated in the fiatTokenPair contract for the given token and currency.
+     *
+     * If the token or currency symbols or the listing action  are changed, the listing is
+     * deleted from the current fiatTokenPair contract and created in the new one.
+     *
+     *
+     * @param listingTokenSymbol current token symbol of the listing to be updated
+     * @param listingCurrencySymbol current currency symbol of the listing to be updated
+     * @param listingId Id of the listing to be updated
+     * @param tokenSymbol new token symbol to be updated on the listing
+     * @param currencySymbol new currency symbol to be updated on the listing
+     *
+     */
     function updateListing(
         string memory listingTokenSymbol,
         string memory listingCurrencySymbol,
@@ -128,6 +187,9 @@ contract EzcrowRamp is
         }
     }
 
+    /**
+     * @dev Deletes the listing with the given token and currency symbol and id.
+     */
     function deleteListing(
         string memory tokenSymbol,
         string memory currencySymbol,
@@ -139,6 +201,16 @@ contract EzcrowRamp is
         );
     }
 
+    /**
+     * @dev Creates a new order for the given token and currency symbols and listing id.
+     * The token and currency must be registered before calling this function and the listing
+     * must exist in the fiatTokenPair.
+     *
+     * @param tokenSymbol of the token to be traded in the pair
+     * @param currencySymbol of the currency to be traded in the pair
+     * @param listingId Id of the listing the order is for
+     * @param tokenAmount Amount of tokens to be bought or sold
+     */
     function createOrder(
         string memory tokenSymbol,
         string memory currencySymbol,
@@ -152,6 +224,16 @@ contract EzcrowRamp is
         );
     }
 
+    /**
+     * @dev This is a signable function. It allows the users to sign a transaction
+     * and for it to be triggered by anyone. Which potentially allows for a gasless transaction
+     * from the user's side. Accepts the order.
+     *
+     * @param owner Address of the owner of the signature and user interacting with the order
+     * @param tokenSymbol of the token to traded in the pair
+     * @param currencySymbol of the currency to be traded in the pair
+     * @param orderId Id of the order to be accepted
+     */
     function acceptOrder(
         address owner,
         string memory tokenSymbol,
@@ -169,6 +251,16 @@ contract EzcrowRamp is
         );
     }
 
+    /**
+     * @dev This is a signable function. It allows the users to sign a transaction
+     * and for it to be triggered by anyone. Which potentially allows for a gasless transaction
+     * from the user's side. Rejects the order.
+     *
+     * @param owner Address of the owner of the signature and user interacting with the order
+     * @param tokenSymbol of the token to traded in the pair
+     * @param currencySymbol of the currency to be traded in the pair
+     * @param orderId Id of the order to be accepted
+     */
     function rejectOrder(
         address owner,
         string memory tokenSymbol,
@@ -186,6 +278,9 @@ contract EzcrowRamp is
         );
     }
 
+    /**
+     * @dev Cancels the order with the given token and currency symbols and id.
+     */
     function acceptDispute(
         string memory tokenSymbol,
         string memory currencySymbol,
@@ -197,6 +292,9 @@ contract EzcrowRamp is
         );
     }
 
+    /**
+     * @dev Completes the order with the given token and currency symbols and id.
+     */
     function rejectDispute(
         string memory tokenSymbol,
         string memory currencySymbol,
@@ -211,6 +309,10 @@ contract EzcrowRamp is
     /**
      * External view functions
      */
+
+    /**
+     * @dev Returns all tradable token symbols
+     */
     function getTokenSymbols() external view returns (string[] memory) {
         address[] memory tokenAddresses = getAllTokenAddresses();
         string[] memory tokenSymbols = new string[](tokenAddresses.length);
@@ -222,6 +324,9 @@ contract EzcrowRamp is
         return tokenSymbols;
     }
 
+    /**
+     * @dev Returns all tradable currency symbols
+     */
     function getCurrencySymbols() external view returns (string[] memory) {
         address[] memory currencySettingsAddresses = getAllCurrencySettingsAdrresses();
         string[] memory currencySymbols = new string[](currencySettingsAddresses.length);

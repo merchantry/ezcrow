@@ -70,6 +70,16 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
     /**
      * External functions
      */
+
+    /**
+     * @dev Only callable by the owner contract. Creates a new order and emits an OrderCreated event.
+     * Sends the order data to the event handler to validate. The event handler will revert if data
+     * is invalid. Initializes the order keys for easy sorting and filtering.
+     *
+     * @param listingId Id of the listing the order is for
+     * @param tokenAmount Amount of tokens to be bought or sold
+     * @param creator Address of the order creator
+     */
     function createOrder(
         uint256 listingId,
         uint256 tokenAmount,
@@ -88,6 +98,15 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
         emit OrderCreated(order);
     }
 
+    /**
+     * @dev Only callable by the owner contract. Accepts the order and emits an OrderAccepted event.
+     * The event handler will compute the next status based on the current status and the sender's
+     * role. The event handler will revert if the order cannot be accepted. Updates the order status
+     * history and updates the order keys for easy sorting and filtering.
+     *
+     * @param id Id of the order to be accepted
+     * @param sender Address of the user interacting with the order
+     */
     function acceptOrder(uint256 id, address sender) external onlyOwner notCancelled(id) {
         Order storage order = _getOrder(id);
         OrderStatus currentStatus = order.statusHistory.getCurrentStatus();
@@ -100,6 +119,15 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
         ordersKeyStorage.updateKeys(order);
     }
 
+    /**
+     * @dev Only callable by the owner contract. Rejects the order and emits an OrderRejected event.
+     * The event handler will compute the next status based on the current status and the sender's
+     * role. The event handler will revert if the order cannot be rejected. Updates the order status
+     * history and updates the order keys for easy sorting and filtering.
+     *
+     * @param id Id of the order to be rejected
+     * @param sender Address of the user interacting with the order
+     */
     function rejectOrder(uint256 id, address sender) external onlyOwner notCancelled(id) {
         Order storage order = _getOrder(id);
         OrderStatus currentStatus = order.statusHistory.getCurrentStatus();
@@ -112,6 +140,13 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
         ordersKeyStorage.updateKeys(order);
     }
 
+    /**
+     * @dev Only callable by the owner contract. Cancels the order and emits an OrderRejected event.
+     * Reverts if the order is not in dispute.
+     *
+     * @param id Id of the order to be cancelled
+     * @param sender Address of the user interacting with the order
+     */
     function acceptDispute(uint256 id, address sender) external onlyOwner orderInDispute(id) {
         Order storage order = _getOrder(id);
         OrderStatus currentStatus = order.statusHistory.getCurrentStatus();
@@ -124,6 +159,13 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
         ordersKeyStorage.updateKeys(order);
     }
 
+    /**
+     * @dev Only callable by the owner contract. Cempletes the order and emits an OrderAccepted event.
+     * Reverts if the order is not in dispute.
+     *
+     * @param id Id of the order to be rejected
+     * @param sender Address of the user interacting with the order
+     */
     function rejectDispute(uint256 id, address sender) external onlyOwner orderInDispute(id) {
         Order storage order = _getOrder(id);
         OrderStatus currentStatus = order.statusHistory.getCurrentStatus();
@@ -143,18 +185,41 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
         return _getOrder(id);
     }
 
+    /**
+     * @dev Returns all orders
+     */
     function getOrders() external view returns (Order[] memory) {
         return _getOrders();
     }
 
+    /**
+     * @dev Returns all orders for a listing
+     */
     function getListingOrders(uint256 listingId) public view returns (Order[] memory) {
         return _getOrdersFromIds(ordersKeyStorage.getListingOrderIds(listingId));
     }
 
+    /**
+     * @dev Returns all user orders. If the user is the listing creator, returns all orders for
+     * the listing.
+     */
     function getUserOrders(address user) external view returns (Order[] memory) {
         return _getOrdersFromIds(ordersKeyStorage.getUserOrderIds(user));
     }
 
+    /**
+     * @dev Returns a sorted and filtered array of orders for a specific user
+     * based on the provided parameters. The orders are sorted by the order.tokenAmount
+     *
+     * @param user Address of the user to get orders for
+     * @param filter OrderFilter to apply
+     * @param dir SortDirection to apply
+     * @param offset Offset to start slice from
+     * @param count Maximum amount of orders to return
+     * @param maxOrders Maximum amount of orders to sort and filter. The
+     *  higher the number, more orders will be sorted through and the slower
+     *  the function will be. At high numbers it also fails.
+     */
     function getSortedUserOrders(
         address user,
         OrdersFilter filter,

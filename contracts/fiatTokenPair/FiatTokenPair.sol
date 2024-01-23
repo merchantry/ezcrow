@@ -41,6 +41,11 @@ contract FiatTokenPair is
     using TransformUintToInt for uint8;
     using ListingsUserRoleHandler for address;
 
+    /**
+     * @dev Immutable representative value of the pair symbol. It's used to
+     * identify the pair in the FiatTokenPairFactory by generating a hash
+     * of the pair symbol.
+     */
     string public pairSymbol;
 
     IListingsHandler public listingsHandler;
@@ -84,10 +89,17 @@ contract FiatTokenPair is
         return
             Math.max(
                 tokenAmountFP.mul(pricePerTokenFP),
+                // We set the minimum price to be 1 full currency unit
+                // to avoid possibly rounding to 0
                 Math.multiplyByTenPow(1, pricePerTokenFP.decimals.toInt())
             );
     }
 
+    /**
+     * Checks if all orders for a listing have a status in the given array
+     * @param listingId of the Listing to check
+     * @param statuses Array of possible OrderStatus values
+     */
     function allOrdersHaveStatus(
         uint256 listingId,
         OrderStatus[] memory statuses
@@ -119,12 +131,25 @@ contract FiatTokenPair is
     /**
      * IListingsEventHandler functions
      */
+
+    /**
+     * If a user created a sell listing, we need to transfer the tokens
+     * that are being sold to the contract as an escrow deposit.
+     * @param listing Listing that was created
+     */
     function onListingCreated(Listing memory listing) external onlyOnListingEvent {
         if (listing.action != ListingAction.Sell) return;
 
         transferFromUser(listing.creator, listing.totalTokenAmount);
     }
 
+    /**
+     * If a user updated a sell listing, we need to correct the amount of
+     * tokens deposited in the contract if the total amount of tokens
+     * changed.
+     * @param previousAmount Previous amount of tokens in the listing
+     * @param listing Listing that was updated
+     */
     function onListingUpdated(
         uint256 previousAmount,
         Listing memory listing
@@ -138,6 +163,11 @@ contract FiatTokenPair is
         }
     }
 
+    /**
+     * If a user deleted a sell listing, we need to transfer the tokens
+     * that were not sold back to the user.
+     * @param listing Listing that was deleted
+     */
     function onListingDeleted(Listing memory listing) external onlyOnListingEvent {
         if (listing.action != ListingAction.Sell) return;
 
@@ -146,6 +176,10 @@ contract FiatTokenPair is
 
     /**
      * IListingsEventHandler view functions
+     */
+
+    /**
+     *  @dev Checks whether the listing data is valid. If not, it reverts.
      */
     function beforeListingCreate(
         uint256 price,
@@ -168,27 +202,44 @@ contract FiatTokenPair is
         }
     }
 
+    /**
+     *  @dev Checks whether the listing can be updated. If not, it reverts.
+     */
     function beforeListingUpdate(uint256 listingId) external view {
-        OrderStatus[] memory possibleOrders = new OrderStatus[](1);
-        possibleOrders[0] = OrderStatus.Cancelled;
+        OrderStatus[] memory accepted = new OrderStatus[](1);
+        accepted[0] = OrderStatus.Cancelled;
 
-        if (!allOrdersHaveStatus(listingId, possibleOrders)) {
+        if (!allOrdersHaveStatus(listingId, accepted)) {
             revert ListingCannotBeUpdated(listingId);
         }
     }
 
+    /**
+     *  @dev Checks whether the listing can be deleted. If not, it reverts.
+     */
     function beforeListingDelete(uint256 listingId) external view {
-        OrderStatus[] memory possibleOrders = new OrderStatus[](2);
-        possibleOrders[0] = OrderStatus.Cancelled;
-        possibleOrders[1] = OrderStatus.Completed;
+        OrderStatus[] memory accepted = new OrderStatus[](2);
+        accepted[0] = OrderStatus.Cancelled;
+        accepted[1] = OrderStatus.Completed;
 
-        if (!allOrdersHaveStatus(listingId, possibleOrders)) {
+        if (!allOrdersHaveStatus(listingId, accepted)) {
             revert ListingCannotBeDeleted(listingId);
         }
     }
 
     /**
      * IOrdersEventHandler functions
+     */
+
+    /**
+     * @dev Triggers the next event based on the current status of the order
+     *  - Assets confirmed: subtracts the amount of tokens from the listing, if
+     *   there are enough tokens available, otherwise it reverts.
+     * - Tokens deposited: transfers the tokens from the order creator to the
+     *   contract as an escrow deposit.
+     * - Completed: transfers the tokens from the contract to the right buyer
+     *
+     * @param order Order that was accepted
      */
     function onOrderAccepted(Order memory order) external onlyOnOrderEvent {
         OrderStatus status = order.statusHistory.getCurrentStatus();
@@ -216,6 +267,14 @@ contract FiatTokenPair is
         }
     }
 
+    /**
+     * @dev Triggers the next event based on the statuses that transpired
+     *  - Assets confirmed: adds the amount of tokens back to the listing
+     *  - Tokens deposited: transfers the tokens from the contract back to the
+     *    order creator
+     *
+     * @param order Order that was rejected
+     */
     function onOrderRejected(Order memory order) external onlyOnOrderEvent {
         if (order.statusHistory.getCurrentStatus() != OrderStatus.Cancelled) return;
 
@@ -223,6 +282,8 @@ contract FiatTokenPair is
             listingsHandler.addListingAvailableAmount(order.listingId, order.tokenAmount);
         }
 
+        // TokensDeposited status can only be reached in the ListingAction.Buy case
+        // in which case, we know that the order creator is the seller
         if (order.statusHistory.statusExists(OrderStatus.TokensDeposited)) {
             transferToUser(order.creator, order.tokenAmount);
         }
@@ -231,10 +292,19 @@ contract FiatTokenPair is
     /**
      * IOrdersEventHandler view functions
      */
+
+    /**
+     * @dev Returns the listing from the listing handler
+     */
     function getListing(uint256 listingId) public view returns (Listing memory) {
         return listingsHandler.getListing(listingId);
     }
 
+    /**
+     * @dev Calculates the price of tokens based on the price in the listing
+     * @param listingId Id of the listing, from which to get the price
+     * @param tokenAmount Amount of tokens to calculate the price for
+     */
     function calculateOrderPrice(
         uint256 listingId,
         uint256 tokenAmount
@@ -263,6 +333,13 @@ contract FiatTokenPair is
         }
     }
 
+    /**
+     * @dev Computes the resulting status of an order confirmation based on the current status,
+     * the role of the user interacting with the order, and the action of the
+     * listing.
+     * @param orderId Id of the order
+     * @param sender Address of the user interacting with the order
+     */
     function computeOrderConfirmationStatus(
         uint256 orderId,
         address sender
@@ -292,6 +369,13 @@ contract FiatTokenPair is
             );
     }
 
+    /**
+     * @dev Computes the resulting status of an order cancellation based on the current status,
+     * the role of the user interacting with the order, and the action of the
+     * listing.
+     * @param orderId Id of the order
+     * @param sender Address of the user interacting with the order
+     */
     function computeOrderCancellationStatus(
         uint256 orderId,
         address sender

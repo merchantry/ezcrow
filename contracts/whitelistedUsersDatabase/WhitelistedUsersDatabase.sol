@@ -15,6 +15,11 @@ contract WhitelistedUsersDatabase is
 
     constructor() Ownable(_msgSender()) {}
 
+    /**
+     * @dev Adds a user to the whitelist and emits a UserAdded event
+     *
+     * @param user address to be added to the whitelist
+     */
     function add(address user) external onlyOwner {
         if (whitelistedUsers[user]) {
             revert UserAlreadyWhitelisted(user);
@@ -25,6 +30,12 @@ contract WhitelistedUsersDatabase is
         emit UserAdded(user);
     }
 
+    /**
+     * @dev Removes a user from the whitelist and emits a UserRemoved event.
+     * The user is still kept in the array, but is filtered out in the getWhitelistedUsers function
+     *
+     * @param user address to be removed from the whitelist
+     */
     function remove(address user) external onlyOwner {
         if (!whitelistedUsers[user]) {
             revert UserNotWhitelisted(user);
@@ -35,10 +46,16 @@ contract WhitelistedUsersDatabase is
         emit UserRemoved(user);
     }
 
+    /**
+     * @dev Checks if a user is whitelisted
+     */
     function isWhitelisted(address user) external view returns (bool) {
         return whitelistedUsers[user];
     }
 
+    /**
+     * @dev Returns an array of whitelisted users
+     */
     function getWhitelistedUsers() external view returns (address[] memory) {
         address[] memory users = new address[](whitelistedUsersList.length);
         uint256 index = 0;

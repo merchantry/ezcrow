@@ -12,6 +12,11 @@ library OrderStatusHandler {
      * OrderStatus, interacting user's role, an ListingAction.
      * Chooses the correct status based on the OrderStatusTree data provided.
      * - `contracts/utils/structs.sol`
+     *
+     * @param statusHistory Order status history
+     * @param role Interacting user's role
+     * @param action ListingAction
+     * @param orderStatusTree OrderStatusTree
      */
     function getNextStatus(
         OrderStatus[] memory statusHistory,

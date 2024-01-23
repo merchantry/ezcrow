@@ -51,6 +51,18 @@ abstract contract FiatTokenPairFactory is IFiatTokenPairFactoryErrors {
         return tokenSymbol.concat("/").concat(currencySymbol);
     }
 
+    /**
+     * @dev Creates a new fiat token pair contract. The pair symbol is generated from the token and currency settings symbols
+     * and is hashed to be used as a key in the fiatTokenPairs mapping.
+     *
+     * The listings and orders handlers are deployed through their respective deployers
+     * to distribute the contract size.
+     * The pair is initialized with the provided initial listing and order ids.
+     *
+     * @param owner contract of the pair
+     * @param token to be traded
+     * @param currencySettings of the currency traded against
+     */
     function createFiatTokenPair(
         address owner,
         address token,
