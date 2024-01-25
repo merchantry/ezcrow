@@ -33,7 +33,7 @@ struct Listing {
  * @param fiatAmount Amount of fiat currency to be paid
  * @param tokenAmount Amount of tokens to be bought or sold
  * @param listingId Id of the listing the order is for
- * @param status Order status
+ * @param statusHistory Order status history
  * @param creator Address of the order creator
  */
 struct Order {
