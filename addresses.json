@@ -1,0 +1,26 @@
+{
+  "FiatTokenPairDeployer": {
+    "telostest": "0xc52b9417C462E8812ab539B3cd31568A0aa4856e"
+  },
+  "ListingsKeyStorageDeployer": {
+    "telostest": "0x6a2abA5d42f2F6D6B69e32C85A00b694973D5654"
+  },
+  "ListingsHandlerDeployer": {
+    "telostest": "0x2c8238CE55b1194C61f18ac528865c9c47137229"
+  },
+  "OrdersHandlerDeployer": {
+    "telostest": "0x0646CfFCdfE0A3AbE86e34eC367c19130177A93E"
+  },
+  "EzcrowRamp": {
+    "telostest": "0xD54189F49fd2E9eeb3f4e4959487d83a80838C3b"
+  },
+  "FiatTokenPairHandler": {
+    "telostest": "0x496cD4D9A36e045d63fAf4A2111bfeEEaB6200c5"
+  },
+  "OrdersKeyStorageDeployer": {
+    "telostest": "0xB362d50cEf8D9Ccce255CEb8dd70F41DD1d825f7"
+  },
+  "EzcrowRampQuery": {
+    "telostest": "0xE2569Dd45186D1c227467c5Ed8980F45718F12f1"
+  }
+}
