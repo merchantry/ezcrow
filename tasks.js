@@ -6,6 +6,7 @@ const { ListingAction } = require('./test/utils/enums');
 const { getDomain } = require('./test/utils/eip712');
 const { OrderActionPermit } = require('./test/utils/eip712-types');
 const { getDeployedContract } = require('./scripts/utils/ethers');
+const { stringIdsToObject } = require('./scripts/helpers');
 
 task(
   'getTokens',
@@ -40,10 +41,41 @@ task('getOrders', 'Prints orders for the given token and currency')
 
 task('addToken', 'Adds a token to the list of accepted tokens on EzcrowRamp')
   .addParam('address', 'The address of the token')
-  .setAction(async ({ address }) => {
+  .addParam('listingids', 'Initial listing ids for the token')
+  .addParam('orderids', 'Initial order ids for the token')
+  .setAction(async taskArgs => {
     const ezcrowRamp = await getDeployedContract('EzcrowRamp');
+
+    const listingIds = stringIdsToObject(taskArgs.listingids);
+    const orderIds = stringIdsToObject(taskArgs.orderids);
+
+    const currencySymbols = await ezcrowRamp.getCurrencySymbols();
+
+    for (const currencySymbol of currencySymbols) {
+      if (!(currencySymbol in listingIds))
+        throw new Error(`Missing listing id for ${currencySymbol}`);
+      if (!(currencySymbol in orderIds))
+        throw new Error(`Missing order id for ${currencySymbol}`);
+    }
+
     const tx = await ezcrowRamp.addToken(address);
     await tx.wait();
+
+    const tokenSymbol = await new ethers.Contract(taskArgs.address, [
+      'function symbol() view returns (string)',
+    ])
+      .connect(ethers.provider)
+      .symbol();
+
+    for (const currencySymbol of currencySymbols) {
+      const tx = await ezcrowRamp.connectFiatTokenPair(
+        tokenSymbol,
+        currencySymbols,
+        listingIds[currencySymbol],
+        orderIds[currencySymbol]
+      );
+      await tx.wait();
+    }
 
     const tokenSymbols = await ezcrowRamp.getTokenSymbols();
     console.log('Token added! Current list of tokens:', tokenSymbols);
@@ -52,41 +84,38 @@ task('addToken', 'Adds a token to the list of accepted tokens on EzcrowRamp')
 task('addCurrencySettings', 'Adds currency settings to EzcrowRamp')
   .addParam('symbol', 'The symbol of the currency')
   .addParam('decimals', 'The decimals of the currency')
+  .addParam('listingids', 'Initial listing ids for the currency')
+  .addParam('orderids', 'Initial order ids for the currency')
   .setAction(async ({ symbol, decimals }) => {
     const ezcrowRamp = await getDeployedContract('EzcrowRamp');
+
+    const listingIds = stringIdsToObject(taskArgs.listingids);
+    const orderIds = stringIdsToObject(taskArgs.orderids);
+
+    const tokenSymbols = await ezcrowRamp.getTokenSymbols();
+
+    for (const tokenSymbol of tokenSymbols) {
+      if (!(tokenSymbol in listingIds))
+        throw new Error(`Missing listing id for ${tokenSymbol}`);
+      if (!(tokenSymbol in orderIds))
+        throw new Error(`Missing order id for ${tokenSymbol}`);
+    }
+
     const tx = await ezcrowRamp.addCurrencySettings(symbol, decimals);
     await tx.wait();
 
+    for (const tokenSymbol of tokenSymbols) {
+      const tx = await ezcrowRamp.connectFiatTokenPair(
+        tokenSymbol,
+        symbol,
+        listingIds[tokenSymbol],
+        orderIds[tokenSymbol]
+      );
+      await tx.wait();
+    }
+
     const currencySymbols = await ezcrowRamp.getCurrencySymbols();
     console.log('Currency added! Current list of currencies:', currencySymbols);
-  });
-
-task(
-  'connectFiatTokenPair',
-  'Creates a new FiatTokenPair for the given token and currency and initializes listing and order ids'
-)
-  .addParam('token', 'The symbol of the token')
-  .addParam('currency', 'The symbol of the currency')
-  .addParam('listingid', 'Initial listing id')
-  .addParam('orderid', 'Initial order id')
-  .setAction(async ({ token, currency, listingid, orderid }) => {
-    const ezcrowRamp = await getDeployedContract('EzcrowRamp');
-    const tx = await ezcrowRamp.connectFiatTokenPair(
-      token,
-      currency,
-      listingid,
-      orderid
-    );
-    await tx.wait();
-
-    const fiatTokenPairHandler = await getDeployedContract(
-      'FiatTokenPairHandler'
-    );
-
-    const fiatTokenPairAddress =
-      await fiatTokenPairHandler.getFiatTokenPairAddress(token, currency);
-
-    console.log('FiatTokenPair created at:', fiatTokenPairAddress);
   });
 
 task('whitelist', 'Whitelists an address')

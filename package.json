@@ -4,7 +4,9 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "prettier": "prettier --write --plugin=prettier-plugin-solidity contracts/**/*.sol test/**/*.js",
-    "lint": "eslint --fix --ext .js,.test.js"
+    "lint": "eslint --fix --ext .js,.test.js",
+    "hardhat": "hardhat",
+    "deploy": "hardhat run scripts/deploy.js"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
