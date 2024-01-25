@@ -30,11 +30,9 @@ Deploys the following contracts and saves the addresses in `./addresses.json`:
 
 ```
 npm run deploy -- --network <NETWORK>
-```
 
 example:
 
-```
 npm run deploy -- --network telostest
 ```
 
@@ -42,11 +40,9 @@ npm run deploy -- --network telostest
 
 ```
 npm run hardhat -- --network <NETWORK> addCurrencySettings --symbol <STRING> --decimals <STRING> --listingids <STRING> --orderids <STRING>
-```
 
 example:
 
-```
 npm run hardhat -- --network telostest addCurrencySettings -- --symbol USD --decimals 3 --listingids BTC:100,USDT:200,USDC:300 --orderids BTC:100,USDT:200,USDC:300
 ```
 
@@ -65,11 +61,9 @@ addCurrencySettings: Adds currency settings to EzcrowRamp
 
 ```
 npm run hardhat -- --network <NETWORK> addToken --address <STRING> --listingids <STRING> --orderids <STRING>
-```
 
 example:
 
-```
 npm run hardhat -- --network telostest addToken --address 0xF3136b01c3b9d27d778C6E3387861d0A0Cfd7474 --listingids USD:100,EUR:200,INR:300 --orderids USD:100,EUR:200,INR:300
 ```
 
