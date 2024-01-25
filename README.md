@@ -16,7 +16,9 @@ whitelist             Whitelists an address
 ```
 
 ## **Deployment**
+
 Deploys the following contracts and saves the addresses in `./addresses.json`:
+
 - FiatTokenPairDeployer
 - ListingsKeyStorageDeployer
 - ListingsHandlerDeployer
@@ -50,10 +52,12 @@ npm run hardhat -- --network telostest addCurrencySettings -- --symbol USD --dec
 
 OPTIONS:
 
+```
 --symbol The symbol of the currency
 --decimals The decimals of the currency
 --listingids Initial listing ids for the currency
 --orderids Initial order ids for the currency
+```
 
 addCurrencySettings: Adds currency settings to EzcrowRamp
 
@@ -71,9 +75,11 @@ npm run hardhat -- --network telostest addToken --address 0xF3136b01c3b9d27d778C
 
 OPTIONS:
 
+```
 --address The address of the token
 --listingids Initial listing ids for the token
 --orderids Initial order ids for the token
+```
 
 addToken: Adds a token to the list of accepted tokens on EzcrowRamp
 
