@@ -14,7 +14,6 @@ addToken              Adds a token to the list of accepted tokens on EzcrowRamp
 createListing         Creates a listing
 getListings           Prints listings for the given token and currency
 createOrder           Creates an order
-getListings           Prints listings for the given token and currency
 getOrders             Prints orders for the given token and currency
 getTokens             Prints the list of accepted tokens on EzcrowRamp
 rejectOrder           Generates a signature for rejecting an order

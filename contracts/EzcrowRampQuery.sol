@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import {IFiatTokenPairHandler} from "./fiatTokenPair/interfaces/IFiatTokenPairHandler.sol";
 import {Listing, Order} from "./utils/structs.sol";
-import {SortDirection, ListingsFilter, ListingsSortBy, OrdersFilter} from "./utils/enums.sol";
 
 contract EzcrowRampQuery {
     IFiatTokenPairHandler private fiatTokenPairHandler;
@@ -28,58 +27,26 @@ contract EzcrowRampQuery {
 
     function getListings(
         string memory tokenSymbol,
-        string memory currencySymbol
+        string memory currencySymbol,
+        uint256 maxListings
     ) external view returns (Listing[] memory) {
-        return fiatTokenPairHandler.getListingsHandler(tokenSymbol, currencySymbol).getListings();
+        return
+            fiatTokenPairHandler.getListingsHandler(tokenSymbol, currencySymbol).getListings(
+                maxListings
+            );
     }
 
     function getUserListings(
         string memory tokenSymbol,
         string memory currencySymbol,
-        address user
+        address user,
+        uint256 maxListings
     ) external view returns (Listing[] memory) {
         return
             fiatTokenPairHandler.getListingsHandler(tokenSymbol, currencySymbol).getUserListings(
-                user
-            );
-    }
-
-    function getSortedListings(
-        string memory tokenSymbol,
-        string memory currencySymbol,
-        ListingsFilter filter,
-        ListingsSortBy sortBy,
-        SortDirection dir,
-        uint256 offset,
-        uint256 count,
-        uint256 maxListings
-    ) external view returns (Listing[] memory) {
-        return
-            fiatTokenPairHandler.getListingsHandler(tokenSymbol, currencySymbol).getSortedListings(
-                filter,
-                sortBy,
-                dir,
-                offset,
-                count,
+                user,
                 maxListings
             );
-    }
-
-    function getSortedUserListings(
-        string memory tokenSymbol,
-        string memory currencySymbol,
-        address user,
-        ListingsFilter filter,
-        ListingsSortBy sortBy,
-        SortDirection dir,
-        uint256 offset,
-        uint256 count,
-        uint256 maxListings
-    ) external view returns (Listing[] memory) {
-        return
-            fiatTokenPairHandler
-                .getListingsHandler(tokenSymbol, currencySymbol)
-                .getSortedUserListings(user, filter, sortBy, dir, offset, count, maxListings);
     }
 
     function getOrder(
@@ -92,48 +59,35 @@ contract EzcrowRampQuery {
 
     function getOrders(
         string memory tokenSymbol,
-        string memory currencySymbol
+        string memory currencySymbol,
+        uint256 maxOrders
     ) external view returns (Order[] memory) {
-        return fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).getOrders();
+        return
+            fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).getOrders(maxOrders);
     }
 
     function getUserOrders(
         string memory tokenSymbol,
         string memory currencySymbol,
-        address user
+        address user,
+        uint256 maxOrders
     ) external view returns (Order[] memory) {
         return
-            fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).getUserOrders(user);
+            fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).getUserOrders(
+                user,
+                maxOrders
+            );
     }
 
     function getListingOrders(
         string memory tokenSymbol,
         string memory currencySymbol,
-        uint256 listingId
-    ) external view returns (Order[] memory) {
-        return
-            fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).getListingOrders(
-                listingId
-            );
-    }
-
-    function getSortedUserOrders(
-        string memory tokenSymbol,
-        string memory currencySymbol,
-        address user,
-        OrdersFilter filter,
-        SortDirection dir,
-        uint256 offset,
-        uint256 count,
+        uint256 listingId,
         uint256 maxOrders
     ) external view returns (Order[] memory) {
         return
-            fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).getSortedUserOrders(
-                user,
-                filter,
-                dir,
-                offset,
-                count,
+            fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).getListingOrders(
+                listingId,
                 maxOrders
             );
     }

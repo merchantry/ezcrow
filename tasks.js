@@ -25,7 +25,7 @@ task('getListings', 'Prints listings for the given token and currency')
   .setAction(async ({ token, currency }) => {
     const ezcrowRampQuery = await getDeployedContract('EzcrowRampQuery');
 
-    const listings = await ezcrowRampQuery.getListings(token, currency);
+    const listings = await ezcrowRampQuery.getListings(token, currency, 500);
     console.log(listings);
   });
 
@@ -35,7 +35,7 @@ task('getOrders', 'Prints orders for the given token and currency')
   .setAction(async ({ token, currency }) => {
     const ezcrowRampQuery = await getDeployedContract('EzcrowRampQuery');
 
-    const orders = await ezcrowRampQuery.getOrders(token, currency);
+    const orders = await ezcrowRampQuery.getOrders(token, currency, 500);
     console.log(orders);
   });
 
@@ -174,7 +174,7 @@ task('createListing', 'Creates a listing')
 
     const ezcrowRampQuery = await getDeployedContract('EzcrowRampQuery');
 
-    const listings = await ezcrowRampQuery.getListings(token, currency);
+    const listings = await ezcrowRampQuery.getListings(token, currency, 10);
 
     console.log('Listing created! Current listings:', listings);
   });
@@ -195,7 +195,7 @@ task('createOrder', 'Creates an order')
 
     const ezcrowRampQuery = await getDeployedContract('EzcrowRampQuery');
 
-    const orders = await ezcrowRampQuery.getOrders(token, currency);
+    const orders = await ezcrowRampQuery.getOrders(token, currency, 10);
     console.log('Order created! Current orders:', orders);
   });
 

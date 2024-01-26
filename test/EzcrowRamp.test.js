@@ -17,6 +17,7 @@ const CURRENCIES_TO_ADD = [CURRENCY_SYMBOL, 'EUR', 'INR'];
 const TOKENS_TO_ADD = [TOKEN_SYMBOL, 'ETH', 'LTC'];
 const INITIAL_LISTING_ID = 220000;
 const INITIAL_ORDER_ID = 480000;
+const MAX_ITEMS = 100;
 
 const signData = (signer, contract, message) =>
   getDomain(contract)
@@ -742,7 +743,8 @@ describe('EzcrowRamp', function () {
 
       const [listingA, listingB] = await ezcrowRampQuery.getListings(
         TOKEN_SYMBOL,
-        CURRENCY_SYMBOL
+        CURRENCY_SYMBOL,
+        MAX_ITEMS
       );
 
       expect(listingA.isDeleted).to.be.true;

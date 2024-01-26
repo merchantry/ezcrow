@@ -8,7 +8,7 @@ import {IOrdersFactoryErrors} from "./interfaces/IOrdersFactoryErrors.sol";
 
 contract OrdersFactory is IOrdersFactoryErrors {
     mapping(uint256 => Order) private orders;
-    AutoIncrementingId private orderId;
+    AutoIncrementingId internal orderId;
 
     constructor(uint256 initialId) {
         orderId = new AutoIncrementingId(initialId);

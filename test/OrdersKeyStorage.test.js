@@ -3,13 +3,7 @@ const {
 } = require('@nomicfoundation/hardhat-toolbox/network-helpers');
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
-const {
-  ListingAction,
-  SortDirection,
-  OrdersFilter,
-  OrderStatus,
-} = require('./utils/enums');
-const { getOrderCurrentStatus } = require('./utils/helpers');
+const { ListingAction, OrderStatus } = require('./utils/enums');
 
 describe('OrdersKeyStorage', function () {
   async function deployFixture() {
@@ -122,91 +116,6 @@ describe('OrdersKeyStorage', function () {
       );
     });
 
-    it('initializes order amount keys', async function () {
-      const { ordersKeyStorage, listing, orders } = this;
-
-      orders[1].tokenAmount *= 2;
-
-      await ordersKeyStorage.initializeKeys(orders[0], listing);
-      await ordersKeyStorage.initializeKeys(orders[1], listing);
-
-      const sortedIds = await ordersKeyStorage.sortAndFilterIds(
-        orders.map(order => order.id),
-        OrdersFilter.All,
-        SortDirection.Desc
-      );
-
-      expect(sortedIds).to.deep.equal(orders.map(order => order.id).reverse());
-    });
-
-    it('initializes order status keys', async function () {
-      const {
-        ordersKeyStorage,
-        listing,
-        orders: [defaultOrderData],
-      } = this;
-
-      const orders = [
-        {
-          ...defaultOrderData,
-          id: 1,
-          statusHistory: [OrderStatus.RequestSent],
-        },
-        {
-          ...defaultOrderData,
-          id: 2,
-          statusHistory: [OrderStatus.RequestSent, OrderStatus.AssetsConfirmed],
-        },
-        {
-          ...defaultOrderData,
-          id: 3,
-          statusHistory: [
-            OrderStatus.RequestSent,
-            OrderStatus.AssetsConfirmed,
-            OrderStatus.Cancelled,
-          ],
-        },
-        {
-          ...defaultOrderData,
-          id: 4,
-          statusHistory: [
-            OrderStatus.RequestSent,
-            OrderStatus.AssetsConfirmed,
-            OrderStatus.TokensDeposited,
-            OrderStatus.PaymentSent,
-            OrderStatus.Completed,
-          ],
-        },
-        {
-          ...defaultOrderData,
-          id: 5,
-          statusHistory: [
-            OrderStatus.RequestSent,
-            OrderStatus.AssetsConfirmed,
-            OrderStatus.TokensDeposited,
-            OrderStatus.PaymentSent,
-            OrderStatus.InDispute,
-          ],
-        },
-      ];
-      const orderIds = orders.map(order => order.id);
-
-      for (const order of orders) {
-        await ordersKeyStorage.initializeKeys(order, listing);
-      }
-
-      for (const order of orders) {
-        const statusFilter = getOrderCurrentStatus(order) + 1;
-        const [filteredOrderId] = await ordersKeyStorage.sortAndFilterIds(
-          orderIds,
-          statusFilter,
-          SortDirection.Desc
-        );
-
-        expect(filteredOrderId).to.equal(order.id);
-      }
-    });
-
     it('reverts if not accessed by owner', async function () {
       const {
         ordersKeyStorage,
@@ -217,55 +126,6 @@ describe('OrdersKeyStorage', function () {
 
       await expect(
         ordersKeyStorage.connect(otherUser).initializeKeys(order, listing)
-      ).to.be.revertedWithCustomError(
-        ordersKeyStorage,
-        'OwnableUnauthorizedAccount'
-      );
-    });
-  });
-
-  describe('updateKeys', function () {
-    beforeEach(async function () {
-      const {
-        ordersKeyStorage,
-        listing,
-        orders: [order],
-      } = this;
-
-      await ordersKeyStorage.initializeKeys(order, listing);
-    });
-
-    it('updates order status key', async function () {
-      const {
-        ordersKeyStorage,
-        orders: [order],
-      } = this;
-
-      const newOrder = {
-        ...order,
-        statusHistory: [OrderStatus.RequestSent, OrderStatus.AssetsConfirmed],
-      };
-
-      await ordersKeyStorage.updateKeys(newOrder);
-
-      const [filteredOrderId] = await ordersKeyStorage.sortAndFilterIds(
-        [order.id],
-        OrdersFilter.AssetsConfirmed,
-        SortDirection.Desc
-      );
-
-      expect(filteredOrderId).to.equal(order.id);
-    });
-
-    it('reverts if not accessed by owner', async function () {
-      const {
-        ordersKeyStorage,
-        orders: [order],
-        otherUser,
-      } = this;
-
-      await expect(
-        ordersKeyStorage.connect(otherUser).updateKeys(order)
       ).to.be.revertedWithCustomError(
         ordersKeyStorage,
         'OwnableUnauthorizedAccount'

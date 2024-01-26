@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {SortDirection} from "../enums.sol";
 import {Math} from "./Math.sol";
 
 library ArrayUtils {

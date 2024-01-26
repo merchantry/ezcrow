@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import {Listing, Order} from "../utils/structs.sol";
-import {OrderStatus, UserRole, SortDirection, OrdersFilter} from "../utils/enums.sol";
+import {OrderStatus, UserRole} from "../utils/enums.sol";
 import {OrdersFactory} from "./OrdersFactory.sol";
 import {OrdersKeyStorage} from "./OrdersKeyStorage.sol";
 import {IOrdersKeyStorage} from "./interfaces/IOrdersKeyStorage.sol";
@@ -116,7 +116,6 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
 
         order.statusHistory.push(nextStatus);
         eventHandler.onOrderAccepted(order);
-        ordersKeyStorage.updateKeys(order);
     }
 
     /**
@@ -137,7 +136,6 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
 
         order.statusHistory.push(nextStatus);
         eventHandler.onOrderRejected(order);
-        ordersKeyStorage.updateKeys(order);
     }
 
     /**
@@ -156,7 +154,6 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
 
         order.statusHistory.push(nextStatus);
         eventHandler.onOrderRejected(order);
-        ordersKeyStorage.updateKeys(order);
     }
 
     /**
@@ -175,7 +172,6 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
 
         order.statusHistory.push(nextStatus);
         eventHandler.onOrderAccepted(order);
-        ordersKeyStorage.updateKeys(order);
     }
 
     /**
@@ -186,53 +182,33 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
     }
 
     /**
-     * @dev Returns all orders
+     * @dev Returns up to maxOrders
      */
-    function getOrders() external view returns (Order[] memory) {
-        return _getOrders();
+    function getOrders(uint256 maxOrders) external view returns (Order[] memory) {
+        return
+            _getOrdersFromIds(
+                ArrayUtils.range(orderId.getInitial(), orderId.getCurrent()).sliceFromEnd(maxOrders)
+            );
     }
 
     /**
      * @dev Returns all orders for a listing
      */
-    function getListingOrders(uint256 listingId) public view returns (Order[] memory) {
-        return _getOrdersFromIds(ordersKeyStorage.getListingOrderIds(listingId));
+    function getListingOrders(
+        uint256 listingId,
+        uint256 maxOrders
+    ) public view returns (Order[] memory) {
+        return
+            _getOrdersFromIds(
+                ordersKeyStorage.getListingOrderIds(listingId).sliceFromEnd(maxOrders)
+            );
     }
 
     /**
      * @dev Returns all user orders. If the user is the listing creator, returns all orders for
      * the listing.
      */
-    function getUserOrders(address user) external view returns (Order[] memory) {
-        return _getOrdersFromIds(ordersKeyStorage.getUserOrderIds(user));
-    }
-
-    /**
-     * @dev Returns a sorted and filtered array of orders for a specific user
-     * based on the provided parameters. The orders are sorted by the order.tokenAmount
-     *
-     * @param user Address of the user to get orders for
-     * @param filter OrderFilter to apply
-     * @param dir SortDirection to apply
-     * @param offset Offset to start slice from
-     * @param count Maximum amount of orders to return
-     * @param maxOrders Maximum amount of orders to sort and filter. The
-     *  higher the number, more orders will be sorted through and the slower
-     *  the function will be. At high numbers it also fails.
-     */
-    function getSortedUserOrders(
-        address user,
-        OrdersFilter filter,
-        SortDirection dir,
-        uint256 offset,
-        uint256 count,
-        uint256 maxOrders
-    ) external view returns (Order[] memory) {
-        uint256[] memory ids = ordersKeyStorage.getUserOrderIds(user).sliceFromEnd(maxOrders);
-
-        return
-            _getOrdersFromIds(
-                ordersKeyStorage.sortAndFilterIds(ids, filter, dir).slice(offset, count)
-            );
+    function getUserOrders(address user, uint256 maxOrders) external view returns (Order[] memory) {
+        return _getOrdersFromIds(ordersKeyStorage.getUserOrderIds(user).sliceFromEnd(maxOrders));
     }
 }

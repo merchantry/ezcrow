@@ -14,7 +14,6 @@ import {OrderActionSignable} from "./OrderActionSignable.sol";
 import {ListingAction} from "./utils/structs.sol";
 import {Strings} from "./utils/libraries/Strings.sol";
 import {Listing, Order} from "./utils/structs.sol";
-import {SortDirection, ListingsFilter, ListingsSortBy} from "./utils/enums.sol";
 
 contract EzcrowRamp is
     CurrencySettingsHandler,

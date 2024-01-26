@@ -104,7 +104,7 @@ contract FiatTokenPair is
         uint256 listingId,
         OrderStatus[] memory statuses
     ) private view returns (bool) {
-        Order[] memory orders = ordersHandler.getListingOrders(listingId);
+        Order[] memory orders = ordersHandler.getListingOrders(listingId, 750);
 
         for (uint256 i = 0; i < orders.length; i++) {
             OrderStatus orderStatus = orders[i].statusHistory.getCurrentStatus();

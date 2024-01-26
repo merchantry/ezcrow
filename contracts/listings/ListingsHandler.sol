@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {ListingAction, ListingsSortBy, SortDirection, ListingsFilter} from "../utils/enums.sol";
+import {ListingAction} from "../utils/enums.sol";
 import {Listing} from "../utils/structs.sol";
 import {FixedPointMath} from "../utils/libraries/FixedPointMath.sol";
-import {IdSortHandler} from "../utils/libraries/IdSortHandler.sol";
 import {Math} from "../utils/libraries/Math.sol";
 import {ArrayUtils} from "../utils/libraries/ArrayUtils.sol";
 import {ListingsFactory} from "./ListingsFactory.sol";
@@ -109,8 +108,6 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
         unchecked {
             listing.availableTokenAmount += amount;
         }
-
-        listingsKeyStorage.updateKeys(listing);
     }
 
     /**
@@ -126,8 +123,6 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
         unchecked {
             listing.availableTokenAmount -= amount;
         }
-
-        listingsKeyStorage.updateKeys(listing);
     }
 
     /**
@@ -212,7 +207,6 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
         listing.minPricePerOrder = minPricePerOrder;
         listing.maxPricePerOrder = maxPricePerOrder;
 
-        listingsKeyStorage.updateKeys(listing);
         emit ListingUpdated(listing);
         eventHandler.onListingUpdated(previousAmount, listing);
     }
@@ -245,78 +239,27 @@ contract ListingsHandler is ListingsFactory, IListingsHandler, IListingsHandlerE
     }
 
     /**
-     * @dev Returns all listings
+     * @dev Returns up to maxListings
      */
-    function getListings() external view returns (Listing[] memory) {
-        return _getListings();
+    function getListings(uint256 maxListings) external view returns (Listing[] memory) {
+        return
+            _getListingsFromIds(
+                ArrayUtils.range(listingId.getInitial(), listingId.getCurrent()).sliceFromEnd(
+                    maxListings
+                )
+            );
     }
 
     /**
      * @dev Returns all listings for a specific user
      */
-    function getUserListings(address user) external view returns (Listing[] memory) {
-        return _getListingsFromIds(listingsKeyStorage.getUserListingIds(user));
-    }
-
-    /**
-     * @dev Returns a sorted and filtered array of listings based on the
-     * provided parameters.
-     *
-     * @param filter ListingsFilter to apply
-     * @param sortBy ListingsSortBy field to sort by
-     * @param dir SortDirection direction to sort by
-     * @param offset Offset to start slice from
-     * @param count Maximum amount of listings to return
-     * @param maxListings Maximum amount of listings to sort and filter. The
-     *  higher the number, more listings will be sorted through and the slower
-     *  the function will be. At high numbers it also fails.
-     */
-    function getSortedListings(
-        ListingsFilter filter,
-        ListingsSortBy sortBy,
-        SortDirection dir,
-        uint256 offset,
-        uint256 count,
-        uint256 maxListings
-    ) external view returns (Listing[] memory) {
-        uint256[] memory ids = ArrayUtils
-            .range(listingId.getInitial(), listingId.getCurrent())
-            .sliceFromEnd(maxListings);
-
-        return
-            _getListingsFromIds(
-                listingsKeyStorage.sortAndFilterIds(ids, filter, sortBy, dir).slice(offset, count)
-            );
-    }
-
-    /**
-     * @dev Returns a sorted and filtered array of listings for a specific user
-     * based on the provided parameters.
-     *
-     * @param user Address of the user to get listings for
-     * @param filter ListingsFilter to apply
-     * @param sortBy ListingsSortBy field to sort by
-     * @param dir SortDirection direction to sort by
-     * @param offset Offset to start slice from
-     * @param count Maximum amount of listings to return
-     * @param maxListings Maximum amount of listings to sort and filter. The
-     *  higher the number, more listings will be sorted through and the slower
-     *  the function will be. At high numbers it also fails.
-     */
-    function getSortedUserListings(
+    function getUserListings(
         address user,
-        ListingsFilter filter,
-        ListingsSortBy sortBy,
-        SortDirection dir,
-        uint256 offset,
-        uint256 count,
         uint256 maxListings
     ) external view returns (Listing[] memory) {
-        uint256[] memory ids = listingsKeyStorage.getUserListingIds(user).sliceFromEnd(maxListings);
-
         return
             _getListingsFromIds(
-                listingsKeyStorage.sortAndFilterIds(ids, filter, sortBy, dir).slice(offset, count)
+                listingsKeyStorage.getUserListingIds(user).sliceFromEnd(maxListings)
             );
     }
 }
