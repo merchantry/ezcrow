@@ -1,3 +1,10 @@
+```
+git clone https://github.com/merchantry/ezcrow.git
+cd ezcrow
+npm install
+npm run test
+```
+
 ## **Available Tasks**
 
 ```
@@ -43,7 +50,7 @@ npm run hardhat -- --network <NETWORK> addCurrencySettings --symbol <STRING> --d
 
 example:
 
-npm run hardhat -- --network telostest addCurrencySettings -- --symbol USD --decimals 3 --listingids BTC:100,USDT:200,USDC:300 --orderids BTC:100,USDT:200,USDC:300
+npm run hardhat -- --network telostest addCurrencySettings --symbol USD --decimals 3 --listingids BTC:100,USDT:200,USDC:300 --orderids BTC:100,USDT:200,USDC:300
 ```
 
 OPTIONS:
