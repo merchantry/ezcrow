@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import {Order} from "../utils/structs.sol";
 import {AutoIncrementingId} from "../utils/AutoIncrementingId.sol";
-import {OrderStatus} from "../utils/enums.sol";
+import {OrderStatus, ListingAction} from "../utils/enums.sol";
 import {IOrdersFactoryErrors} from "./interfaces/IOrdersFactoryErrors.sol";
 
 contract OrdersFactory is IOrdersFactoryErrors {
@@ -21,13 +21,22 @@ contract OrdersFactory is IOrdersFactoryErrors {
         uint256 fiatAmount,
         uint256 tokenAmount,
         uint256 listingId,
+        ListingAction listingAction,
         address creator
     ) internal returns (Order storage) {
         uint256 id = orderId.getNext();
         OrderStatus[] memory statusHistory = new OrderStatus[](1);
         statusHistory[0] = OrderStatus.RequestSent;
 
-        orders[id] = Order(id, fiatAmount, tokenAmount, listingId, statusHistory, creator);
+        orders[id] = Order(
+            id,
+            fiatAmount,
+            tokenAmount,
+            listingId,
+            listingAction,
+            statusHistory,
+            creator
+        );
 
         return orders[id];
     }

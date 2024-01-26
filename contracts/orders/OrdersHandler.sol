@@ -91,6 +91,7 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
             eventHandler.calculateOrderPrice(listingId, tokenAmount),
             tokenAmount,
             listingId,
+            listing.action,
             creator
         );
 
