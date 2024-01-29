@@ -24,10 +24,7 @@ const getListingData = (tokenDecimals, priceDecimals) => {
   const action = ListingAction.Buy;
   const price = multiplyByTenPow(1n, priceDecimals);
   const tokenAmount = multiplyByTenPow(5000n, tokenDecimals);
-  const max = multiplyByTenPow(
-    price * tokenAmount,
-    priceDecimals - tokenDecimals
-  );
+  const max = multiplyByTenPow(price * tokenAmount, -tokenDecimals);
   const min = max;
 
   return {

@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import {ListingAction} from "../utils/enums.sol";
 import {Listing} from "../utils/structs.sol";
-import {FixedPointMath} from "../utils/libraries/FixedPointMath.sol";
 import {Math} from "../utils/libraries/Math.sol";
 import {ArrayUtils} from "../utils/libraries/ArrayUtils.sol";
 import {ListingsFactory} from "./ListingsFactory.sol";

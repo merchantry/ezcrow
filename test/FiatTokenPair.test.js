@@ -553,7 +553,7 @@ describe('FiatTokenPair', function () {
           const newTokenAmount = tokenAmount + change;
           const newMax = multiplyByTenPow(
             price * newTokenAmount,
-            CURRENCY_DECIMALS - TOKEN_DECIMALS
+            -TOKEN_DECIMALS
           );
           const newMin = newMax;
 
@@ -1043,7 +1043,7 @@ describe('FiatTokenPair', function () {
           tokenAmount - multiplyByTenPow(1000n, TOKEN_DECIMALS);
         const orderPrice = multiplyByTenPow(
           price * orderAmount,
-          CURRENCY_DECIMALS - TOKEN_DECIMALS
+          -TOKEN_DECIMALS
         );
 
         await expect(
@@ -1068,7 +1068,7 @@ describe('FiatTokenPair', function () {
           tokenAmount + multiplyByTenPow(1000n, TOKEN_DECIMALS);
         const orderPrice = multiplyByTenPow(
           price * orderAmount,
-          CURRENCY_DECIMALS - TOKEN_DECIMALS
+          -TOKEN_DECIMALS
         );
 
         await expect(

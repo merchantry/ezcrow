@@ -82,12 +82,3 @@ struct OrderStatusTree {
     OrderStatus[2] orderCreatorSellingStatuses;
     OrderStatus[1] orderCreatorBuyingStatuses;
 }
-
-/**
- * @dev FixedPoint used to represent a fixed point number
- * for easier calculations.
- */
-struct FixedPoint {
-    uint256 value;
-    uint8 decimals;
-}

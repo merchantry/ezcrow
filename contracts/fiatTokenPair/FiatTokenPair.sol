@@ -15,9 +15,8 @@ import {IOrdersEventHandlerErrors} from "../orders/interfaces/IOrdersEventHandle
 import {IOrdersHandler} from "../orders/interfaces/IOrdersHandler.sol";
 
 import {ListingAction, OrderStatus, UserRole} from "../utils/enums.sol";
-import {Listing, Order, OrderStatusTree, FixedPoint} from "../utils/structs.sol";
+import {Listing, Order, OrderStatusTree} from "../utils/structs.sol";
 import {Math} from "../utils/libraries/Math.sol";
-import {FixedPointMath} from "../utils/libraries/FixedPointMath.sol";
 import {TransformUintToInt} from "../utils/libraries/TransformUintToInt.sol";
 import {Ownable} from "../utils/Ownable.sol";
 
@@ -37,7 +36,6 @@ contract FiatTokenPair is
     IOrdersEventHandlerErrors
 {
     using OrderStatusHandler for OrderStatus[];
-    using FixedPointMath for FixedPoint;
     using TransformUintToInt for uint8;
     using ListingsUserRoleHandler for address;
 
@@ -83,15 +81,12 @@ contract FiatTokenPair is
         uint256 tokenAmount,
         uint256 pricePerToken
     ) private view returns (uint256) {
-        FixedPoint memory tokenAmountFP = FixedPoint(tokenAmount, getDecimals());
-        FixedPoint memory pricePerTokenFP = FixedPoint(pricePerToken, getCurrencyDecimals());
-
         return
             Math.max(
-                tokenAmountFP.mul(pricePerTokenFP),
+                Math.multiplyByTenPow(tokenAmount * pricePerToken, -getDecimals().toInt()),
                 // We set the minimum price to be 1 full currency unit
                 // to avoid possibly rounding to 0
-                Math.multiplyByTenPow(1, pricePerTokenFP.decimals.toInt())
+                Math.multiplyByTenPow(1, getCurrencyDecimals().toInt())
             );
     }
 
