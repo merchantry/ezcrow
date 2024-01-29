@@ -41,8 +41,20 @@ task('getOrders', 'Prints orders for the given token and currency')
 
 task('addToken', 'Adds a token to the list of accepted tokens on EzcrowRamp')
   .addParam('address', 'The address of the token')
-  .addParam('listingids', 'Initial listing ids for the token')
-  .addParam('orderids', 'Initial order ids for the token')
+  .addParam(
+    'listingids',
+    'Initial listing ids for the token',
+    undefined,
+    undefined,
+    true
+  )
+  .addParam(
+    'orderids',
+    'Initial order ids for the token',
+    undefined,
+    undefined,
+    true
+  )
   .setAction(async taskArgs => {
     const ezcrowRamp = await getDeployedContract('EzcrowRamp');
 
@@ -58,7 +70,7 @@ task('addToken', 'Adds a token to the list of accepted tokens on EzcrowRamp')
         throw new Error(`Missing order id for ${currencySymbol}`);
     }
 
-    const tx = await ezcrowRamp.addToken(address);
+    const tx = await ezcrowRamp.addToken(taskArgs.address);
     await tx.wait();
 
     const tokenSymbol = await new ethers.Contract(taskArgs.address, [
@@ -84,9 +96,21 @@ task('addToken', 'Adds a token to the list of accepted tokens on EzcrowRamp')
 task('addCurrencySettings', 'Adds currency settings to EzcrowRamp')
   .addParam('symbol', 'The symbol of the currency')
   .addParam('decimals', 'The decimals of the currency')
-  .addParam('listingids', 'Initial listing ids for the currency')
-  .addParam('orderids', 'Initial order ids for the currency')
-  .setAction(async ({ symbol, decimals }) => {
+  .addParam(
+    'listingids',
+    'Initial listing ids for the currency',
+    undefined,
+    undefined,
+    true
+  )
+  .addParam(
+    'orderids',
+    'Initial order ids for the currency',
+    undefined,
+    undefined,
+    true
+  )
+  .setAction(async taskArgs => {
     const ezcrowRamp = await getDeployedContract('EzcrowRamp');
 
     const listingIds = stringIdsToObject(taskArgs.listingids);
@@ -101,13 +125,16 @@ task('addCurrencySettings', 'Adds currency settings to EzcrowRamp')
         throw new Error(`Missing order id for ${tokenSymbol}`);
     }
 
-    const tx = await ezcrowRamp.addCurrencySettings(symbol, decimals);
+    const tx = await ezcrowRamp.addCurrencySettings(
+      taskArgs.symbol,
+      taskArgs.decimals
+    );
     await tx.wait();
 
     for (const tokenSymbol of tokenSymbols) {
       const tx = await ezcrowRamp.connectFiatTokenPair(
         tokenSymbol,
-        symbol,
+        taskArgs.symbol,
         listingIds[tokenSymbol],
         orderIds[tokenSymbol]
       );
@@ -232,6 +259,7 @@ task('acceptOrder', 'Generates a signature for accepting an order')
       v,
       r,
       s,
+      network: await ethers.provider.getNetwork(),
     });
   });
 
@@ -261,5 +289,6 @@ task('rejectOrder', 'Generates a signature for rejecting an order')
       v,
       r,
       s,
+      network: await ethers.provider.getNetwork(),
     });
   });
