@@ -22,7 +22,7 @@ abstract contract TokenFactory is ITokenFactoryErrors {
         tokenKeys.push(key);
     }
 
-    function getTokenAddress(string memory symbol) internal view returns (address) {
+    function getTokenAddress(string memory symbol) public view returns (address) {
         bytes32 key = symbol.toHash();
         address tokenAddress = tokenAddresses[key];
 
