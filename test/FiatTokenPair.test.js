@@ -942,13 +942,17 @@ describe('FiatTokenPair', function () {
 
     describe('createOrder', function () {
       it('creates an order', async function () {
-        const { ordersHandler, owner } = this;
+        const {
+          ordersHandler,
+          owner: listingCreator,
+          otherUser: orderCreator,
+        } = this;
         const { action, tokenAmount, max: totalPrice } = this.listingData;
 
         await ordersHandler.createOrder(
           INITIAL_LISTING_ID,
           tokenAmount,
-          owner.address
+          orderCreator.address
         );
 
         const order = await ordersHandler.getOrder(INITIAL_ORDER_ID);
@@ -958,19 +962,24 @@ describe('FiatTokenPair', function () {
         expect(order.listingAction).to.equal(action);
         expect(order.fiatAmount).to.equal(totalPrice);
         expect(order.tokenAmount).to.equal(tokenAmount);
-        expect(order.creator).to.equal(owner.address);
         expect(order.statusHistory).to.deep.equal([OrderStatus.RequestSent]);
+        expect(order.creator).to.equal(orderCreator.address);
+        expect(order.listingCreator).to.equal(listingCreator.address);
       });
 
       it('emits an event', async function () {
-        const { ordersHandler, owner } = this;
+        const {
+          ordersHandler,
+          owner: listingCreator,
+          otherUser: orderCreator,
+        } = this;
         const { action, tokenAmount, max: totalPrice } = this.listingData;
 
         await expect(
           ordersHandler.createOrder(
             INITIAL_LISTING_ID,
             tokenAmount,
-            owner.address
+            orderCreator.address
           )
         )
           .to.emit(ordersHandler, 'OrderCreated')
@@ -982,7 +991,8 @@ describe('FiatTokenPair', function () {
               listingId: INITIAL_LISTING_ID,
               listingAction: action,
               statusHistory: [OrderStatus.RequestSent],
-              creator: owner.address,
+              creator: orderCreator.address,
+              listingCreator: listingCreator.address,
             })
           );
       });

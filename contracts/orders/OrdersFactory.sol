@@ -22,7 +22,8 @@ contract OrdersFactory is IOrdersFactoryErrors {
         uint256 tokenAmount,
         uint256 listingId,
         ListingAction listingAction,
-        address creator
+        address creator,
+        address listingCreator
     ) internal returns (Order storage) {
         uint256 id = orderId.getNext();
         OrderStatus[] memory statusHistory = new OrderStatus[](1);
@@ -35,7 +36,8 @@ contract OrdersFactory is IOrdersFactoryErrors {
             listingId,
             listingAction,
             statusHistory,
-            creator
+            creator,
+            listingCreator
         );
 
         return orders[id];

@@ -92,7 +92,8 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
             tokenAmount,
             listingId,
             listing.action,
-            creator
+            creator,
+            listing.creator
         );
 
         ordersKeyStorage.initializeKeys(order, listing);

@@ -45,6 +45,7 @@ struct Order {
     ListingAction listingAction;
     OrderStatus[] statusHistory;
     address creator;
+    address listingCreator;
 }
 
 /**

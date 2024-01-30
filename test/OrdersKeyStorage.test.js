@@ -38,6 +38,7 @@ describe('OrdersKeyStorage', function () {
         listingAction: ListingAction.Buy,
         statusHistory: [OrderStatus.RequestSent],
         creator: orderCreator.address,
+        listingCreator: listingCreator.address,
       },
       {
         id: 2,
@@ -47,6 +48,7 @@ describe('OrdersKeyStorage', function () {
         listingAction: ListingAction.Buy,
         statusHistory: [OrderStatus.RequestSent],
         creator: orderCreator.address,
+        listingCreator: listingCreator.address,
       },
     ];
 
