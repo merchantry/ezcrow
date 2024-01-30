@@ -241,6 +241,7 @@ task('acceptOrder', 'Generates a signature for accepting an order')
     const orderId = BigInt(orderid);
     const [listingCreator] = await ethers.getSigners();
     const ezcrowRamp = await getDeployedContract('EzcrowRamp');
+    const network = await ethers.provider.getNetwork();
 
     const { v, r, s } = await signData(listingCreator, ezcrowRamp, {
       owner: listingCreator.address,
@@ -259,7 +260,7 @@ task('acceptOrder', 'Generates a signature for accepting an order')
       v,
       r,
       s,
-      network: await ethers.provider.getNetwork(),
+      network: network.name,
     });
   });
 
@@ -271,6 +272,7 @@ task('rejectOrder', 'Generates a signature for rejecting an order')
     const orderId = BigInt(orderid);
     const [, orderCreator] = await ethers.getSigners();
     const ezcrowRamp = await getDeployedContract('EzcrowRamp');
+    const network = await ethers.provider.getNetwork();
 
     const { v, r, s } = await signData(orderCreator, ezcrowRamp, {
       owner: orderCreator.address,
@@ -289,6 +291,6 @@ task('rejectOrder', 'Generates a signature for rejecting an order')
       v,
       r,
       s,
-      network: await ethers.provider.getNetwork(),
+      network: network.name,
     });
   });
