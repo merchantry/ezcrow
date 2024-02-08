@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {WhitelistedUsersDatabase} from "./WhitelistedUsersDatabase.sol";
 import {IWhitelistedUsersDatabase} from "./interfaces/IWhitelistedUsersDatabase.sol";
 import {IWhitelistedUsersDatabaseErrors} from "./interfaces/IWhitelistedUsersDatabaseErrors.sol";
 
-abstract contract WhitelistedUsersDatabaseHandler is IWhitelistedUsersDatabaseErrors, Ownable {
+abstract contract WhitelistedUsersDatabaseHandler is IWhitelistedUsersDatabaseErrors {
     IWhitelistedUsersDatabase private whitelistedUsersDatabase;
 
-    modifier onlyWLUsers() {
-        address sender = _msgSender();
+    modifier onlyWLUsers(address sender) {
         if (!isWhitelisted(sender)) {
             revert UserNotWhitelisted(sender);
         }
@@ -18,15 +16,15 @@ abstract contract WhitelistedUsersDatabaseHandler is IWhitelistedUsersDatabaseEr
         _;
     }
 
-    constructor() Ownable(_msgSender()) {
+    constructor() {
         whitelistedUsersDatabase = new WhitelistedUsersDatabase();
     }
 
-    function addUserToWhitelist(address user) external onlyOwner {
+    function _addUserToWhitelist(address user) internal {
         whitelistedUsersDatabase.add(user);
     }
 
-    function removeUserFromWhiteList(address user) external onlyOwner {
+    function _removeUserFromWhiteList(address user) internal {
         whitelistedUsersDatabase.remove(user);
     }
 

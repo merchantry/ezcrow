@@ -14,18 +14,20 @@ import {OrderActionSignable} from "./OrderActionSignable.sol";
 import {ListingAction} from "./utils/structs.sol";
 import {Strings} from "./utils/libraries/Strings.sol";
 import {Listing, Order} from "./utils/structs.sol";
+import {MultiOwnable} from "./utils/MultiOwnable.sol";
 
 contract EzcrowRamp is
     CurrencySettingsHandler,
     TokenFactory,
     WhitelistedUsersDatabaseHandler,
-    OrderActionSignable
+    OrderActionSignable,
+    MultiOwnable
 {
     using Strings for string;
 
     IFiatTokenPairHandler private fiatTokenPairHandler;
 
-    constructor() OrderActionSignable("EzcrowRamp") {}
+    constructor() OrderActionSignable("EzcrowRamp") MultiOwnable(_msgSender()) {}
 
     /**
      * External functions
@@ -95,6 +97,18 @@ contract EzcrowRamp is
         );
     }
 
+    function addUserToWhitelist(address user) external onlyOwner {
+        _addUserToWhitelist(user);
+    }
+
+    function removeUserFromWhiteList(address user) external onlyOwner {
+        _removeUserFromWhiteList(user);
+    }
+
+    function setCurrencyDecimals(string memory symbol, uint8 decimals) external onlyOwner {
+        _setCurrencyDecimals(symbol, decimals);
+    }
+
     /**
      * @dev Creates a new listing for the given token and currency symbols.
      * The token and currency must be registered before calling this function.
@@ -111,7 +125,7 @@ contract EzcrowRamp is
         uint256 tokenAmount,
         uint256 minPricePerOrder,
         uint256 maxPricePerOrder
-    ) external onlyWLUsers {
+    ) external onlyWLUsers(_msgSender()) {
         fiatTokenPairHandler.getListingsHandler(tokenSymbol, currencySymbol).createListing(
             action,
             price,
