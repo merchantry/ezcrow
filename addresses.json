@@ -22,5 +22,8 @@
   },
   "EzcrowRampQuery": {
     "telostest": "0xE2569Dd45186D1c227467c5Ed8980F45718F12f1"
+  },
+  "TestToken": {
+    "telostest": "0xF3136b01c3b9d27d778C6E3387861d0A0Cfd7474"
   }
 }

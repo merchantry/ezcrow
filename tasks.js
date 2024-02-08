@@ -294,3 +294,16 @@ task('rejectOrder', 'Generates a signature for rejecting an order')
       network: network.name,
     });
   });
+
+task('mintToken', 'Mints test token to the given address')
+  .addParam('address', 'The address to mint to')
+  .addParam('amount', 'The amount of tokens to mint')
+  .setAction(async ({ address, amount }) => {
+    const token = await getDeployedContract('TestToken');
+
+    const tx = await token.mint(address, BigInt(amount));
+    await tx.wait();
+
+    const balance = await token.balanceOf(address);
+    console.log('Token minted! Balance:', balance.toString());
+  });
