@@ -272,6 +272,7 @@ describe('WhitelistedUsersDatabase', function () {
         CURRENCY
       );
 
+      expect(userData.profileNonce).to.equal(1);
       expect(userData.user).to.equal(userA.address);
       expect(userData.currency).to.equal(CURRENCY);
       expect(userData.telegramHandle).to.equal(TELEGRAM_HANDLE);
@@ -280,12 +281,12 @@ describe('WhitelistedUsersDatabase', function () {
     });
 
     it('reverts if not accessed by owner', async function () {
-      const { whitelistedUsersDatabase, userA } = this;
+      const { whitelistedUsersDatabase, userA, userB } = this;
 
       await expect(
         whitelistedUsersDatabase
           .connect(userA)
-          .getUserPreparedData(userA.address, CURRENCY)
+          .getUserPreparedData(userB.address, CURRENCY)
       ).to.be.revertedWithCustomError(
         whitelistedUsersDatabase,
         'OwnableUnauthorizedAccount'

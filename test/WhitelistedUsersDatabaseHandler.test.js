@@ -326,6 +326,53 @@ describe('WhitelistedUsersDatabaseHandler', function () {
     });
   });
 
+  describe('getUserPreparedData', function () {
+    beforeEach(async function () {
+      const { wudbHandler, ezcrowRamp, otherUser } = this;
+
+      await ezcrowRamp.addCurrencySettings(CURRENCY_SYMBOL, CURRENCY_DECIMALS);
+      await wudbHandler.addValidPaymentMethod(PAYMENT_METHOD);
+      await wudbHandler
+        .connect(otherUser)
+        .updateUser(
+          CURRENCY_SYMBOL,
+          TELEGRAM_HANDLE,
+          PAYMENT_METHOD,
+          PAYMENT_DATA
+        );
+    });
+
+    it('shows data if accessed by the user themselves', async function () {
+      const { wudbHandler, otherUser } = this;
+
+      const userData = await wudbHandler
+        .connect(otherUser)
+        .getUserPreparedData(otherUser.address, CURRENCY_SYMBOL);
+
+      expect(userData.profileNonce).to.equal(1);
+    });
+
+    it('shows data if accessed by owner', async function () {
+      const { wudbHandler, owner, otherUser } = this;
+
+      const userData = await wudbHandler
+        .connect(owner)
+        .getUserPreparedData(otherUser.address, CURRENCY_SYMBOL);
+
+      expect(userData.profileNonce).to.equal(1);
+    });
+
+    it('reverts if not accessed by owner or user', async function () {
+      const { wudbHandler, otherUser, userA } = this;
+
+      await expect(
+        wudbHandler
+          .connect(userA)
+          .getUserPreparedData(otherUser.address, CURRENCY_SYMBOL)
+      ).to.be.revertedWithCustomError(wudbHandler, 'UserNotAuthorized');
+    });
+  });
+
   describe('getUserDataWithOrder', function () {
     beforeEach(async function () {
       const {

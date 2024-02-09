@@ -26,11 +26,13 @@ contract WhitelistedUsersDatabase is
         string memory paymentData
     ) external onlyOwner {
         bool whitelisted = false;
+        uint256 profileNonce = _getUserPreparedData(user, currency).profileNonce + 1;
 
         _setUserPreparedData(
             user,
             currency,
             UserData(
+                profileNonce,
                 user,
                 currency,
                 telegramHandle,

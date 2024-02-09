@@ -113,7 +113,13 @@ contract WhitelistedUsersDatabaseHandler is
     function getUserPreparedData(
         address user,
         string memory currency
-    ) external view onlyOwner returns (UserData memory) {
+    ) external view currencyExists(currency) returns (UserData memory) {
+        address sender = _msgSender();
+
+        if (!isOwner(sender) && sender != user) {
+            revert UserNotAuthorized(sender);
+        }
+
         return whitelistedUsersDatabase.getUserPreparedData(user, currency);
     }
 

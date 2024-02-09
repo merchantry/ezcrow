@@ -90,6 +90,7 @@ struct UserPrivateData {
 }
 
 struct UserData {
+    uint256 profileNonce;
     address user;
     string currency;
     string telegramHandle;
