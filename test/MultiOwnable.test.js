@@ -8,11 +8,11 @@ describe('MultiOwnable', function () {
   async function deployFixture() {
     const [owner, userA, userB] = await ethers.getSigners();
 
-    const multiOwnableTest = await ethers
-      .getContractFactory('MultiOwnableTest')
+    const multiOwnable = await ethers
+      .getContractFactory('MultiOwnable')
       .then(contract => contract.deploy());
 
-    return { multiOwnableTest, owner, userA, userB };
+    return { multiOwnable, owner, userA, userB };
   }
 
   beforeEach(async function () {
@@ -21,91 +21,91 @@ describe('MultiOwnable', function () {
 
   describe('Deployment', function () {
     it('deploys', async function () {
-      const { multiOwnableTest } = this;
+      const { multiOwnable } = this;
 
-      expect(multiOwnableTest.target).to.not.be.undefined;
+      expect(multiOwnable.target).to.not.be.undefined;
     });
   });
 
   describe('addOwner', function () {
     it('adds a new owner', async function () {
-      const { multiOwnableTest, userA } = this;
+      const { multiOwnable, userA } = this;
 
-      await multiOwnableTest.addOwner(userA.address);
-      const isOwner = await multiOwnableTest.isOwner(userA.address);
+      await multiOwnable.addOwner(userA.address);
+      const isOwner = await multiOwnable.isOwner(userA.address);
 
       expect(isOwner).to.be.true;
     });
 
     it('reverts if not accessed by owner', async function () {
-      const { multiOwnableTest, userA } = this;
+      const { multiOwnable, userA } = this;
 
-      await expect(multiOwnableTest.connect(userA).addOwner(userA.address))
+      await expect(multiOwnable.connect(userA).addOwner(userA.address))
         .to.be.revertedWithCustomError(
-          multiOwnableTest,
+          multiOwnable,
           'OwnableUnauthorizedAccount'
         )
         .withArgs(userA.address);
     });
 
     it('emits an event', async function () {
-      const { multiOwnableTest, userA } = this;
+      const { multiOwnable, userA } = this;
 
-      await expect(multiOwnableTest.addOwner(userA.address))
-        .to.emit(multiOwnableTest, 'OwnerAdded')
+      await expect(multiOwnable.addOwner(userA.address))
+        .to.emit(multiOwnable, 'OwnerAdded')
         .withArgs(userA.address);
     });
   });
 
   describe('removeOwner', function () {
     beforeEach(async function () {
-      const { multiOwnableTest, userA } = this;
+      const { multiOwnable, userA } = this;
 
-      await multiOwnableTest.addOwner(userA.address);
+      await multiOwnable.addOwner(userA.address);
     });
 
     it('removes an existing owner', async function () {
-      const { multiOwnableTest, userA } = this;
+      const { multiOwnable, userA } = this;
 
-      await multiOwnableTest.removeOwner(userA.address);
-      const isOwner = await multiOwnableTest.isOwner(userA.address);
+      await multiOwnable.removeOwner(userA.address);
+      const isOwner = await multiOwnable.isOwner(userA.address);
 
       expect(isOwner).to.be.false;
     });
 
     it('reverts if not accessed by owner', async function () {
-      const { multiOwnableTest, userA, userB } = this;
+      const { multiOwnable, userA, userB } = this;
 
-      await expect(multiOwnableTest.connect(userB).removeOwner(userA.address))
+      await expect(multiOwnable.connect(userB).removeOwner(userA.address))
         .to.be.revertedWithCustomError(
-          multiOwnableTest,
+          multiOwnable,
           'OwnableUnauthorizedAccount'
         )
         .withArgs(userB.address);
     });
 
     it('emits an event', async function () {
-      const { multiOwnableTest, userA } = this;
+      const { multiOwnable, userA } = this;
 
-      await expect(multiOwnableTest.removeOwner(userA.address))
-        .to.emit(multiOwnableTest, 'OwnerRemoved')
+      await expect(multiOwnable.removeOwner(userA.address))
+        .to.emit(multiOwnable, 'OwnerRemoved')
         .withArgs(userA.address);
     });
   });
 
   describe('isOwner', function () {
     it('returns true for existing owner', async function () {
-      const { multiOwnableTest, owner } = this;
+      const { multiOwnable, owner } = this;
 
-      const isOwner = await multiOwnableTest.isOwner(owner.address);
+      const isOwner = await multiOwnable.isOwner(owner.address);
 
       expect(isOwner).to.be.true;
     });
 
     it('returns false for non-owner', async function () {
-      const { multiOwnableTest, userA } = this;
+      const { multiOwnable, userA } = this;
 
-      const isOwner = await multiOwnableTest.isOwner(userA.address);
+      const isOwner = await multiOwnable.isOwner(userA.address);
 
       expect(isOwner).to.be.false;
     });

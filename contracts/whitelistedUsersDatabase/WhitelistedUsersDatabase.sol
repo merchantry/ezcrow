@@ -2,75 +2,84 @@
 pragma solidity 0.8.20;
 
 import {Ownable} from "../utils/Ownable.sol";
+import {Strings} from "../utils/libraries/Strings.sol";
+import {UserData, UserPrivateData} from "../utils/structs.sol";
+import {StoringUserData} from "./StoringUserData.sol";
 import {IWhitelistedUsersDatabase} from "./interfaces/IWhitelistedUsersDatabase.sol";
 import {IWhitelistedUsersDatabaseErrors} from "./interfaces/IWhitelistedUsersDatabaseErrors.sol";
 
 contract WhitelistedUsersDatabase is
+    StoringUserData,
     IWhitelistedUsersDatabase,
     IWhitelistedUsersDatabaseErrors,
     Ownable
 {
-    mapping(address => bool) private whitelistedUsers;
-    address[] private whitelistedUsersList;
+    using Strings for string;
 
-    constructor() Ownable(_msgSender()) {}
+    constructor(address owner) Ownable(owner) {}
 
-    /**
-     * @dev Adds a user to the whitelist and emits a UserAdded event
-     *
-     * @param user address to be added to the whitelist
-     */
-    function add(address user) external onlyOwner {
-        if (whitelistedUsers[user]) {
-            revert UserAlreadyWhitelisted(user);
-        }
-        whitelistedUsers[user] = true;
-        whitelistedUsersList.push(user);
+    function updateUser(
+        address user,
+        string memory currency,
+        string memory telegramHandle,
+        string memory paymentMethod,
+        string memory paymentData
+    ) external onlyOwner {
+        bool whitelisted = false;
 
-        emit UserAdded(user);
+        _setUserPreparedData(
+            user,
+            currency,
+            UserData(
+                user,
+                currency,
+                telegramHandle,
+                whitelisted,
+                UserPrivateData(paymentMethod, paymentData)
+            )
+        );
+
+        emit UserDataUpdated(user, currency);
     }
 
-    /**
-     * @dev Removes a user from the whitelist and emits a UserRemoved event.
-     * The user is still kept in the array, but is filtered out in the getWhitelistedUsers function
-     *
-     * @param user address to be removed from the whitelist
-     */
-    function remove(address user) external onlyOwner {
-        if (!whitelistedUsers[user]) {
-            revert UserNotWhitelisted(user);
-        }
+    function whitelistUser(address user, string memory currency) external onlyOwner {
+        UserData memory data = _getUserPreparedData(user, currency);
+        data.whitelisted = true;
 
-        whitelistedUsers[user] = false;
+        _setUserData(user, currency, data);
 
-        emit UserRemoved(user);
+        emit UserWhitelisted(user, currency);
     }
 
-    /**
-     * @dev Checks if a user is whitelisted
-     */
-    function isWhitelisted(address user) external view returns (bool) {
-        return whitelistedUsers[user];
+    function delistUser(address user, string memory currency) external onlyOwner {
+        _setWhitelistStatus(user, currency, false);
+
+        emit UserDelisted(user, currency);
     }
 
-    /**
-     * @dev Returns an array of whitelisted users
-     */
-    function getWhitelistedUsers() external view returns (address[] memory) {
-        address[] memory users = new address[](whitelistedUsersList.length);
-        uint256 index = 0;
+    function getUserPreparedData(
+        address user,
+        string memory currency
+    ) external view onlyOwner returns (UserData memory) {
+        return _getUserPreparedData(user, currency);
+    }
 
-        for (uint256 i = 0; i < whitelistedUsersList.length; i++) {
-            if (whitelistedUsers[whitelistedUsersList[i]]) {
-                users[index] = whitelistedUsersList[i];
-                index++;
-            }
+    function getUserData(
+        address user,
+        string memory currency,
+        bool showPrivateInfo
+    ) external view onlyOwner returns (UserData memory) {
+        UserData memory data = _getUserData(user, currency);
+
+        if (!showPrivateInfo) {
+            data.privateData.paymentMethod = "";
+            data.privateData.paymentData = "";
         }
 
-        assembly {
-            mstore(users, index)
-        }
+        return data;
+    }
 
-        return users;
+    function isWhitelisted(address user, string memory currency) external view returns (bool) {
+        return _getUserData(user, currency).whitelisted;
     }
 }

@@ -5,8 +5,13 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { getListingData } = require('./utils/helpers');
 const { ListingAction, OrderStatus } = require('./utils/enums');
-const { getDomain } = require('./utils/eip712');
-const { OrderActionPermit } = require('./utils/eip712-types');
+const { signData } = require('./utils/signature');
+const {
+  addCurrenciesTokensAndWhitelistUser,
+  setupRampAndCreateListing,
+  setupRampAndCreateListingAndOrder,
+  setupOrderAndPutInDispute,
+} = require('./utils/setups');
 
 const TOKEN_NAME = 'Test Token';
 const TOKEN_SYMBOL = 'TT';
@@ -19,16 +24,9 @@ const INITIAL_LISTING_ID = 220000;
 const INITIAL_ORDER_ID = 480000;
 const MAX_ITEMS = 100;
 
-const signData = (signer, contract, message) =>
-  getDomain(contract)
-    .then(domain =>
-      signer.signTypedData(domain, { OrderActionPermit }, message)
-    )
-    .then(ethers.Signature.from);
-
 describe('EzcrowRamp', function () {
   async function deployFixture() {
-    const [owner, otherUser] = await ethers.getSigners();
+    const [owner, otherUser, userA] = await ethers.getSigners();
 
     const fiatTokenPairDeployer = await ethers
       .getContractFactory('FiatTokenPairDeployer')
@@ -56,9 +54,17 @@ describe('EzcrowRamp', function () {
         contract.deploy(TOKEN_NAME, TOKEN_SYMBOL, TOKEN_DECIMALS)
       );
 
+    const multiOwnable = await ethers
+      .getContractFactory('MultiOwnable')
+      .then(contract => contract.deploy());
+
+    const wudb = await ethers
+      .getContractFactory('WhitelistedUsersDatabase')
+      .then(contract => contract.deploy(owner.address));
+
     const ezcrowRamp = await ethers
       .getContractFactory('EzcrowRamp')
-      .then(contract => contract.deploy());
+      .then(contract => contract.deploy(multiOwnable.target, wudb.target));
 
     const fiatTokenPairHandler = await ethers
       .getContractFactory('FiatTokenPairHandler')
@@ -83,158 +89,12 @@ describe('EzcrowRamp', function () {
       ezcrowRamp,
       ezcrowRampQuery,
       fiatTokenPairHandler,
+      wudb,
       token,
       owner,
       otherUser,
+      userA,
     };
-  }
-
-  async function addCurrenciesTokensAndWhitelistUser(
-    ezcrowRamp,
-    currencySymbols,
-    tokens,
-    owner
-  ) {
-    for (const currency of currencySymbols) {
-      await ezcrowRamp.addCurrencySettings(currency, CURRENCY_DECIMALS);
-    }
-
-    for (const token of tokens) {
-      await ezcrowRamp.addToken(token.target);
-    }
-
-    for (const token of tokens) {
-      const tokenSymbol = await token.symbol();
-
-      for (const currencySymbol of currencySymbols) {
-        await ezcrowRamp.connectFiatTokenPair(
-          tokenSymbol,
-          currencySymbol,
-          INITIAL_LISTING_ID,
-          INITIAL_ORDER_ID
-        );
-      }
-    }
-    await ezcrowRamp.addUserToWhitelist(owner.address);
-  }
-
-  async function setupRampAndCreateListing(
-    ezcrowRamp,
-    currencySymbols,
-    tokens,
-    owner
-  ) {
-    const listingData = getListingData(TOKEN_DECIMALS, CURRENCY_DECIMALS);
-
-    await addCurrenciesTokensAndWhitelistUser(
-      ezcrowRamp,
-      currencySymbols,
-      tokens,
-      owner
-    );
-
-    await ezcrowRamp.createListing(
-      TOKEN_SYMBOL,
-      CURRENCY_SYMBOL,
-      listingData.action,
-      listingData.price,
-      listingData.tokenAmount,
-      listingData.max,
-      listingData.min
-    );
-
-    return listingData;
-  }
-
-  async function setupRampAndCreateListingAndOrder(
-    ezcrowRamp,
-    currencySymbols,
-    tokens,
-    listingCreator,
-    orderCreator
-  ) {
-    const listingData = await setupRampAndCreateListing(
-      ezcrowRamp,
-      currencySymbols,
-      tokens,
-      listingCreator
-    );
-
-    await ezcrowRamp
-      .connect(orderCreator)
-      .createOrder(
-        TOKEN_SYMBOL,
-        CURRENCY_SYMBOL,
-        INITIAL_LISTING_ID,
-        listingData.tokenAmount
-      );
-
-    return listingData;
-  }
-
-  async function advanceOrder(ezcrowRamp, user, accept) {
-    const { v, r, s } = await signData(user, ezcrowRamp, {
-      owner: user.address,
-      tokenSymbol: TOKEN_SYMBOL,
-      currencySymbol: CURRENCY_SYMBOL,
-      orderId: INITIAL_ORDER_ID,
-      accept,
-      nonce: await ezcrowRamp.nonces(user.address),
-    });
-
-    const args = [
-      user.address,
-      TOKEN_SYMBOL,
-      CURRENCY_SYMBOL,
-      INITIAL_ORDER_ID,
-      v,
-      r,
-      s,
-    ];
-
-    if (accept) {
-      await ezcrowRamp.acceptOrder(...args);
-    } else {
-      await ezcrowRamp.rejectOrder(...args);
-    }
-  }
-
-  async function setupOrderAndPutInDispute(
-    ezcrowRamp,
-    fiatTokenPairHandler,
-    currencySymbols,
-    tokens,
-    listingCreator,
-    orderCreator
-  ) {
-    const listingData = await setupRampAndCreateListingAndOrder(
-      ezcrowRamp,
-      currencySymbols,
-      tokens,
-      listingCreator,
-      orderCreator
-    );
-
-    const users = [listingCreator, orderCreator];
-    const [token] = tokens;
-    const fiatTokenPairAddress =
-      await fiatTokenPairHandler.getFiatTokenPairAddress(
-        TOKEN_SYMBOL,
-        CURRENCY_SYMBOL
-      );
-
-    await token.mint(orderCreator.address, listingData.tokenAmount);
-    await token
-      .connect(orderCreator)
-      .approve(fiatTokenPairAddress, listingData.tokenAmount);
-
-    for (let i = 0; i < 3; i++) {
-      await advanceOrder(ezcrowRamp, users[i % 2], true);
-    }
-
-    await advanceOrder(ezcrowRamp, orderCreator, false);
-
-    return listingData;
   }
 
   beforeEach(async function () {
@@ -436,14 +296,19 @@ describe('EzcrowRamp', function () {
 
   describe('createListing', function () {
     beforeEach(async function () {
-      const { ezcrowRamp, token, owner } = this;
+      const { ezcrowRamp, token, owner, wudb } = this;
 
-      await addCurrenciesTokensAndWhitelistUser(
+      await addCurrenciesTokensAndWhitelistUser({
         ezcrowRamp,
-        [CURRENCY_SYMBOL],
-        [token],
-        owner
-      );
+        whitelistedUsersDatabase: wudb,
+        currencySymbols: [CURRENCY_SYMBOL],
+        tokens: [token],
+        owner,
+        tokenDecimals: TOKEN_DECIMALS,
+        currencyDecimals: CURRENCY_DECIMALS,
+        initialListingId: INITIAL_LISTING_ID,
+        initialOrderId: INITIAL_ORDER_ID,
+      });
 
       const listingData = getListingData(TOKEN_DECIMALS, CURRENCY_DECIMALS);
 
@@ -499,11 +364,11 @@ describe('EzcrowRamp', function () {
           )
       )
         .to.be.revertedWithCustomError(ezcrowRamp, 'UserNotWhitelisted')
-        .withArgs(nonWhitelistedUser.address);
+        .withArgs(nonWhitelistedUser.address, CURRENCY_SYMBOL);
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp, fiatTokenPairHandler } = this;
+      const { ezcrowRamp, owner } = this;
       const { action, price, tokenAmount, max, min } = this.listingData;
 
       const tokenSymbol = 'BTC';
@@ -520,17 +385,14 @@ describe('EzcrowRamp', function () {
           min
         )
       )
-        .to.be.revertedWithCustomError(
-          fiatTokenPairHandler,
-          'FiatTokenPairDoesNotExist'
-        )
-        .withArgs(tokenSymbol, currencySymbol);
+        .to.be.revertedWithCustomError(ezcrowRamp, 'UserNotWhitelisted')
+        .withArgs(owner.address, currencySymbol);
     });
   });
 
   describe('updateListing', function () {
     beforeEach(async function () {
-      const { ezcrowRamp, owner } = this;
+      const { ezcrowRamp, owner, wudb } = this;
       const tokens = await Promise.all(
         TOKENS_TO_ADD.map(tokenSymbol =>
           ethers
@@ -541,12 +403,19 @@ describe('EzcrowRamp', function () {
         )
       );
 
-      const listingData = await setupRampAndCreateListing(
+      const listingData = await setupRampAndCreateListing({
         ezcrowRamp,
-        CURRENCIES_TO_ADD,
+        whitelistedUsersDatabase: wudb,
+        currencySymbols: CURRENCIES_TO_ADD,
         tokens,
-        owner
-      );
+        owner,
+        currencySymbol: CURRENCY_SYMBOL,
+        tokenSymbol: TOKEN_SYMBOL,
+        tokenDecimals: TOKEN_DECIMALS,
+        currencyDecimals: CURRENCY_DECIMALS,
+        initialListingId: INITIAL_LISTING_ID,
+        initialOrderId: INITIAL_ORDER_ID,
+      });
 
       Object.assign(this, { listingData, tokens });
     });
@@ -763,14 +632,21 @@ describe('EzcrowRamp', function () {
 
   describe('deleteListing', function () {
     beforeEach(async function () {
-      const { ezcrowRamp, token, owner } = this;
+      const { ezcrowRamp, token, owner, wudb } = this;
 
-      await setupRampAndCreateListing(
+      await setupRampAndCreateListing({
         ezcrowRamp,
-        [CURRENCY_SYMBOL],
-        [token],
-        owner
-      );
+        whitelistedUsersDatabase: wudb,
+        currencySymbols: [CURRENCY_SYMBOL],
+        tokens: [token],
+        owner,
+        tokenSymbol: TOKEN_SYMBOL,
+        currencySymbol: CURRENCY_SYMBOL,
+        tokenDecimals: TOKEN_DECIMALS,
+        currencyDecimals: CURRENCY_DECIMALS,
+        initialListingId: INITIAL_LISTING_ID,
+        initialOrderId: INITIAL_ORDER_ID,
+      });
     });
 
     it('deletes a listing', async function () {
@@ -814,14 +690,21 @@ describe('EzcrowRamp', function () {
 
   describe('createOrder', function () {
     beforeEach(async function () {
-      const { ezcrowRamp, token, owner } = this;
+      const { ezcrowRamp, token, owner, wudb } = this;
 
-      const listingData = await setupRampAndCreateListing(
+      const listingData = await setupRampAndCreateListing({
         ezcrowRamp,
-        [CURRENCY_SYMBOL],
-        [token],
-        owner
-      );
+        whitelistedUsersDatabase: wudb,
+        currencySymbols: [CURRENCY_SYMBOL],
+        tokens: [token],
+        owner,
+        tokenSymbol: TOKEN_SYMBOL,
+        currencySymbol: CURRENCY_SYMBOL,
+        tokenDecimals: TOKEN_DECIMALS,
+        currencyDecimals: CURRENCY_DECIMALS,
+        initialListingId: INITIAL_LISTING_ID,
+        initialOrderId: INITIAL_ORDER_ID,
+      });
 
       Object.assign(this, { listingData });
     });
@@ -885,18 +768,27 @@ describe('EzcrowRamp', function () {
     beforeEach(async function () {
       const {
         ezcrowRamp,
+        wudb,
         token,
         owner: listingCreator,
         otherUser: orderCreator,
       } = this;
 
-      await setupRampAndCreateListingAndOrder(
+      await setupRampAndCreateListingAndOrder({
         ezcrowRamp,
-        [CURRENCY_SYMBOL],
-        [token],
+        whitelistedUsersDatabase: wudb,
+        currencySymbols: [CURRENCY_SYMBOL],
+        tokens: [token],
+        owner: listingCreator,
         listingCreator,
-        orderCreator
-      );
+        orderCreator,
+        tokenSymbol: TOKEN_SYMBOL,
+        currencySymbol: CURRENCY_SYMBOL,
+        tokenDecimals: TOKEN_DECIMALS,
+        currencyDecimals: CURRENCY_DECIMALS,
+        initialListingId: INITIAL_LISTING_ID,
+        initialOrderId: INITIAL_ORDER_ID,
+      });
     });
 
     it('accepts an order', async function () {
@@ -971,18 +863,27 @@ describe('EzcrowRamp', function () {
     beforeEach(async function () {
       const {
         ezcrowRamp,
+        wudb,
         token,
         owner: listingCreator,
         otherUser: orderCreator,
       } = this;
 
-      await setupRampAndCreateListingAndOrder(
+      await setupRampAndCreateListingAndOrder({
         ezcrowRamp,
-        [CURRENCY_SYMBOL],
-        [token],
+        whitelistedUsersDatabase: wudb,
+        currencySymbols: [CURRENCY_SYMBOL],
+        tokens: [token],
+        owner: listingCreator,
         listingCreator,
-        orderCreator
-      );
+        orderCreator,
+        tokenSymbol: TOKEN_SYMBOL,
+        currencySymbol: CURRENCY_SYMBOL,
+        tokenDecimals: TOKEN_DECIMALS,
+        currencyDecimals: CURRENCY_DECIMALS,
+        initialListingId: INITIAL_LISTING_ID,
+        initialOrderId: INITIAL_ORDER_ID,
+      });
     });
 
     it('rejects an order', async function () {
@@ -1057,20 +958,29 @@ describe('EzcrowRamp', function () {
     beforeEach(async function () {
       const {
         ezcrowRamp,
-        token,
         fiatTokenPairHandler,
+        wudb,
+        token,
         owner: listingCreator,
         otherUser: orderCreator,
       } = this;
 
-      await setupOrderAndPutInDispute(
+      await setupOrderAndPutInDispute({
         ezcrowRamp,
+        whitelistedUsersDatabase: wudb,
         fiatTokenPairHandler,
-        [CURRENCY_SYMBOL],
-        [token],
+        currencySymbols: [CURRENCY_SYMBOL],
+        tokens: [token],
+        owner: listingCreator,
         listingCreator,
-        orderCreator
-      );
+        orderCreator,
+        tokenSymbol: TOKEN_SYMBOL,
+        currencySymbol: CURRENCY_SYMBOL,
+        tokenDecimals: TOKEN_DECIMALS,
+        currencyDecimals: CURRENCY_DECIMALS,
+        initialListingId: INITIAL_LISTING_ID,
+        initialOrderId: INITIAL_ORDER_ID,
+      });
     });
 
     it('accepts a dispute and cancels the order', async function () {
@@ -1131,20 +1041,29 @@ describe('EzcrowRamp', function () {
     beforeEach(async function () {
       const {
         ezcrowRamp,
-        token,
         fiatTokenPairHandler,
+        wudb,
+        token,
         owner: listingCreator,
         otherUser: orderCreator,
       } = this;
 
-      await setupOrderAndPutInDispute(
+      await setupOrderAndPutInDispute({
         ezcrowRamp,
+        whitelistedUsersDatabase: wudb,
         fiatTokenPairHandler,
-        [CURRENCY_SYMBOL],
-        [token],
+        currencySymbols: [CURRENCY_SYMBOL],
+        tokens: [token],
+        owner: listingCreator,
         listingCreator,
-        orderCreator
-      );
+        orderCreator,
+        tokenSymbol: TOKEN_SYMBOL,
+        currencySymbol: CURRENCY_SYMBOL,
+        tokenDecimals: TOKEN_DECIMALS,
+        currencyDecimals: CURRENCY_DECIMALS,
+        initialListingId: INITIAL_LISTING_ID,
+        initialOrderId: INITIAL_ORDER_ID,
+      });
     });
 
     it('rejects a dispute and completes the order', async function () {
@@ -1198,55 +1117,6 @@ describe('EzcrowRamp', function () {
           'FiatTokenPairDoesNotExist'
         )
         .withArgs(tokenSymbol, currencySymbol);
-    });
-  });
-
-  describe('addUserToWhitelist', function () {
-    it('adds user to whitelist', async function () {
-      const { ezcrowRamp, otherUser } = this;
-
-      await ezcrowRamp.addUserToWhitelist(otherUser.address);
-
-      const isWhitelisted = await ezcrowRamp.isWhitelisted(otherUser.address);
-
-      expect(isWhitelisted).to.be.true;
-    });
-
-    it('reverts if not accessed by owner', async function () {
-      const { ezcrowRamp, otherUser } = this;
-
-      await expect(
-        ezcrowRamp.connect(otherUser).addUserToWhitelist(otherUser.address)
-      )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'OwnableUnauthorizedAccount')
-        .withArgs(otherUser.address);
-    });
-  });
-
-  describe('removeUserFromWhiteList', function () {
-    beforeEach(async function () {
-      const { ezcrowRamp, otherUser } = this;
-
-      await ezcrowRamp.addUserToWhitelist(otherUser.address);
-    });
-    it('adds user to whitelist', async function () {
-      const { ezcrowRamp, otherUser } = this;
-
-      await ezcrowRamp.removeUserFromWhiteList(otherUser.address);
-
-      const isWhitelisted = await ezcrowRamp.isWhitelisted(otherUser.address);
-
-      expect(isWhitelisted).to.be.false;
-    });
-
-    it('reverts if not accessed by owner', async function () {
-      const { ezcrowRamp, otherUser } = this;
-
-      await expect(
-        ezcrowRamp.connect(otherUser).removeUserFromWhiteList(otherUser.address)
-      )
-        .to.be.revertedWithCustomError(ezcrowRamp, 'OwnableUnauthorizedAccount')
-        .withArgs(otherUser.address);
     });
   });
 

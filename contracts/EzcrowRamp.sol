@@ -6,28 +6,37 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IFiatTokenPairHandler} from "./fiatTokenPair/interfaces/IFiatTokenPairHandler.sol";
 import {CurrencySettingsHandler} from "./currencySettings/CurrencySettingsHandler.sol";
 import {TokenFactory} from "./token/TokenFactory.sol";
-import {WhitelistedUsersDatabaseHandler} from "./whitelistedUsersDatabase/WhitelistedUsersDatabaseHandler.sol";
 import {IListingsHandler} from "./listings/interfaces/IListingsHandler.sol";
 import {ICurrencySettings} from "./currencySettings/interfaces/ICurrencySettings.sol";
+import {WhitelistedUsersDatabaseConsumer} from "./whitelistedUsersDatabase/WhitelistedUsersDatabaseConsumer.sol";
 import {OrderActionSignable} from "./OrderActionSignable.sol";
 
-import {ListingAction} from "./utils/structs.sol";
+import {ListingAction, UserData, Listing, Order} from "./utils/structs.sol";
+import {OrderStatus} from "./utils/enums.sol";
 import {Strings} from "./utils/libraries/Strings.sol";
-import {Listing, Order} from "./utils/structs.sol";
-import {MultiOwnable} from "./utils/MultiOwnable.sol";
+import {OrderStatusHandler} from "./orders/libraries/OrderStatusHandler.sol";
+import {MultiOwnableConsumer} from "./multiOwnable/MultiOwnableConsumer.sol";
 
 contract EzcrowRamp is
     CurrencySettingsHandler,
     TokenFactory,
-    WhitelistedUsersDatabaseHandler,
     OrderActionSignable,
-    MultiOwnable
+    WhitelistedUsersDatabaseConsumer,
+    MultiOwnableConsumer
 {
     using Strings for string;
+    using OrderStatusHandler for OrderStatus[];
 
     IFiatTokenPairHandler private fiatTokenPairHandler;
 
-    constructor() OrderActionSignable("EzcrowRamp") MultiOwnable(_msgSender()) {}
+    constructor(
+        address multiOwnable,
+        address whitelistedUsersDatabase
+    )
+        OrderActionSignable("EzcrowRamp")
+        MultiOwnableConsumer(multiOwnable)
+        WhitelistedUsersDatabaseConsumer(whitelistedUsersDatabase)
+    {}
 
     /**
      * External functions
@@ -97,14 +106,12 @@ contract EzcrowRamp is
         );
     }
 
-    function addUserToWhitelist(address user) external onlyOwner {
-        _addUserToWhitelist(user);
-    }
-
-    function removeUserFromWhiteList(address user) external onlyOwner {
-        _removeUserFromWhiteList(user);
-    }
-
+    /**
+     * @dev Updates the currency decimals settings for the given currency.
+     *
+     * @param symbol Symbol of the currency to be updated
+     * @param decimals New number of decimals for the currency
+     */
     function setCurrencyDecimals(string memory symbol, uint8 decimals) external onlyOwner {
         _setCurrencyDecimals(symbol, decimals);
     }
@@ -125,7 +132,7 @@ contract EzcrowRamp is
         uint256 tokenAmount,
         uint256 minPricePerOrder,
         uint256 maxPricePerOrder
-    ) external onlyWLUsers(_msgSender()) {
+    ) external onlyWLUsers(_msgSender(), currencySymbol) {
         fiatTokenPairHandler.getListingsHandler(tokenSymbol, currencySymbol).createListing(
             action,
             price,

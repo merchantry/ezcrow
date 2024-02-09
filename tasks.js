@@ -145,23 +145,36 @@ task('addCurrencySettings', 'Adds currency settings to EzcrowRamp')
     console.log('Currency added! Current list of currencies:', currencySymbols);
   });
 
-task('whitelist', 'Whitelists an address')
-  .addParam('address', 'The address to whitelist')
-  .setAction(async ({ address }) => {
-    const ezcrowRamp = await getDeployedContract('EzcrowRamp');
+task('addValidPaymentMethod', 'Adds a valid payment method')
+  .addParam('method', 'The name of the payment method')
+  .setAction(async ({ method }) => {
+    const wudbHandler = await getDeployedContract(
+      'WhitelistedUsersDatabasHandler'
+    );
 
     {
-      const tx = await ezcrowRamp.addUserToWhitelist(address);
+      const tx = await wudbHandler.addValidPaymentMethod(method);
       await tx.wait();
     }
 
-    const whitelistDB = await ezcrowRamp
-      .getWhitelistedUsersDatabaseAddress()
-      .then(address =>
-        getDeployedContract('WhitelistedUsersDatabase', address)
-      );
-    const whitelistedUsers = await whitelistDB.getWhitelistedUsers();
-    console.log('Address whitelisted:', whitelistedUsers);
+    const paymentMethods = await whitelistDB.getAllValidPaymentMethods();
+    console.log('Payment method added:', paymentMethods);
+  });
+
+task('whitelist', 'Whitelists an address')
+  .addParam('address', 'The address to whitelist')
+  .addParam('currency', 'The symbol of the currency to whitelist for')
+  .setAction(async ({ address, currency }) => {
+    const wudbHandler = await getDeployedContract(
+      'WhitelistedUsersDatabasHandler'
+    );
+
+    {
+      const tx = await wudbHandler.whitelistUser(address, currency);
+      await tx.wait();
+    }
+
+    console.log('Address whitelisted:', address);
   });
 
 task('createListing', 'Creates a listing')

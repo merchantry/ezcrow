@@ -83,3 +83,16 @@ struct OrderStatusTree {
     OrderStatus[2] orderCreatorSellingStatuses;
     OrderStatus[1] orderCreatorBuyingStatuses;
 }
+
+struct UserPrivateData {
+    string paymentMethod;
+    string paymentData;
+}
+
+struct UserData {
+    address user;
+    string currency;
+    string telegramHandle;
+    bool whitelisted;
+    UserPrivateData privateData;
+}

@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-abstract contract MultiOwnable {
+import {IMultiOwnable} from "./interfaces/IMultiOwnable.sol";
+import {IMultiOwnableErrors} from "./interfaces/IMultiOwnableErrors.sol";
+
+contract MultiOwnable is IMultiOwnable, IMultiOwnableErrors {
     mapping(address => bool) private _owners;
-
-    error OwnableUnauthorizedAccount(address account);
-
-    event OwnerAdded(address indexed account);
-
-    event OwnerRemoved(address indexed account);
 
     modifier onlyOwner() {
         if (!isOwner(_msgSender())) {
@@ -18,8 +15,8 @@ abstract contract MultiOwnable {
         _;
     }
 
-    constructor(address owner_) {
-        _owners[owner_] = true;
+    constructor() {
+        _owners[_msgSender()] = true;
     }
 
     /**
@@ -38,11 +35,7 @@ abstract contract MultiOwnable {
         emit OwnerRemoved(account);
     }
 
-    /**
-     * Internal functions
-     */
-
-    function _msgSender() internal view virtual returns (address) {
+    function _msgSender() private view returns (address) {
         return msg.sender;
     }
 

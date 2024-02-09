@@ -2,9 +2,13 @@
 pragma solidity 0.8.20;
 
 import {CurrencySettings} from "./CurrencySettings.sol";
+import {ICurrencySettingsFactory} from "./interfaces/ICurrencySettingsFactory.sol";
 import {ICurrencySettingsFactoryErrors} from "./interfaces/ICurrencySettingsFactoryErrors.sol";
 
-abstract contract CurrencySettingsFactory is ICurrencySettingsFactoryErrors {
+abstract contract CurrencySettingsFactory is
+    ICurrencySettingsFactory,
+    ICurrencySettingsFactoryErrors
+{
     mapping(bytes32 => address) private currencySettings;
     bytes32[] private currencySettingsKeys;
 
