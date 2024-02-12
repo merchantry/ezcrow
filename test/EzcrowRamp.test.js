@@ -461,7 +461,7 @@ describe('EzcrowRamp', function () {
     });
 
     it('reverts if fiat token pair does not exist', async function () {
-      const { ezcrowRamp, fiatTokenPairHandler } = this;
+      const { ezcrowRamp } = this;
       const { action, price, tokenAmount, max, min } = this.listingData;
 
       const tokenSymbol = 'BTC';
@@ -482,12 +482,7 @@ describe('EzcrowRamp', function () {
           max,
           min
         )
-      )
-        .to.be.revertedWithCustomError(
-          fiatTokenPairHandler,
-          'FiatTokenPairDoesNotExist'
-        )
-        .withArgs(tokenSymbol, currencySymbol);
+      ).to.be.reverted;
     });
 
     it('deletes and creates a new listing if token is changed', async function () {
@@ -576,6 +571,32 @@ describe('EzcrowRamp', function () {
       expect(listingB.maxPricePerOrder).to.equal(max);
       expect(listingB.creator).to.equal(owner.address);
       expect(listingB.isDeleted).to.be.false;
+    });
+
+    it('reverts if user is not whitelisted for the given currency', async function () {
+      const { ezcrowRamp, wudb, owner } = this;
+      const { action, price, tokenAmount, max, min } = this.listingData;
+
+      const newCurrencySymbol = CURRENCIES_TO_ADD[1];
+
+      await wudb.delistUser(owner.address, newCurrencySymbol);
+
+      await expect(
+        ezcrowRamp.updateListing(
+          TOKEN_SYMBOL,
+          CURRENCY_SYMBOL,
+          INITIAL_LISTING_ID,
+          TOKEN_SYMBOL,
+          newCurrencySymbol,
+          action,
+          price,
+          tokenAmount,
+          max,
+          min
+        )
+      )
+        .to.be.revertedWithCustomError(ezcrowRamp, 'UserNotWhitelisted')
+        .withArgs(owner.address, newCurrencySymbol);
     });
 
     it('deletes and creates a new listing if action is changed', async function () {

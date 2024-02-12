@@ -170,7 +170,7 @@ contract EzcrowRamp is
         uint256 tokenAmount,
         uint256 minPricePerOrder,
         uint256 maxPricePerOrder
-    ) external {
+    ) external onlyWLUsers(_msgSender(), currencySymbol) {
         IListingsHandler currentListingsHandler = fiatTokenPairHandler.getListingsHandler(
             listingTokenSymbol,
             listingCurrencySymbol
