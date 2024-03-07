@@ -8,6 +8,33 @@ const { OrderActionPermit } = require('./test/utils/eip712-types');
 const { getDeployedContract } = require('./scripts/utils/ethers');
 const { stringIdsToObject } = require('./scripts/helpers');
 
+task('profileUpdates').setAction(async () => {
+  const wudb = await getDeployedContract('WhitelistedUsersDatabase');
+
+  const events = (
+    await wudb.queryFilter(wudb.filters.UserDataUpdated(), 0, wudb.blockNumber)
+  )
+    .map(event => ({
+      user: event.args[0],
+      currency: event.args[1],
+      blockNumber: event.blockNumber,
+    }))
+    .sort((a, b) => a.blockNumber - b.blockNumber);
+
+  console.log(events);
+});
+
+task('getUserPreparedData')
+  .addParam('address', 'The address of the user')
+  .addParam('currency', 'The currency of the prepared data')
+  .setAction(async ({ address, currency }) => {
+    const wudb = await getDeployedContract('WhitelistedUsersDatabaseHandler');
+
+    const preparedData = await wudb.getUserPreparedData(address, currency);
+
+    console.log(preparedData);
+  });
+
 task(
   'getTokens',
   'Prints the list of accepted tokens on EzcrowRamp',
@@ -16,6 +43,17 @@ task(
 
     const tokenSymbols = await ezcrowRamp.getTokenSymbols();
     console.log(tokenSymbols);
+  }
+);
+
+task(
+  'getCurrencies',
+  'Prints the list of accepted currencies on EzcrowRamp',
+  async () => {
+    const ezcrowRamp = await getDeployedContract('EzcrowRamp');
+
+    const currencySymbols = await ezcrowRamp.getCurrencySymbols();
+    console.log(currencySymbols);
   }
 );
 
@@ -82,7 +120,7 @@ task('addToken', 'Adds a token to the list of accepted tokens on EzcrowRamp')
     for (const currencySymbol of currencySymbols) {
       const tx = await ezcrowRamp.connectFiatTokenPair(
         tokenSymbol,
-        currencySymbols,
+        currencySymbol,
         listingIds[currencySymbol],
         orderIds[currencySymbol]
       );
@@ -149,7 +187,7 @@ task('addValidPaymentMethod', 'Adds a valid payment method')
   .addParam('method', 'The name of the payment method')
   .setAction(async ({ method }) => {
     const wudbHandler = await getDeployedContract(
-      'WhitelistedUsersDatabasHandler'
+      'WhitelistedUsersDatabaseHandler'
     );
 
     {
@@ -157,7 +195,7 @@ task('addValidPaymentMethod', 'Adds a valid payment method')
       await tx.wait();
     }
 
-    const paymentMethods = await whitelistDB.getAllValidPaymentMethods();
+    const paymentMethods = await wudbHandler.getAllValidPaymentMethods();
     console.log('Payment method added:', paymentMethods);
   });
 
@@ -166,7 +204,7 @@ task('whitelist', 'Whitelists an address')
   .addParam('currency', 'The symbol of the currency to whitelist for')
   .setAction(async ({ address, currency }) => {
     const wudbHandler = await getDeployedContract(
-      'WhitelistedUsersDatabasHandler'
+      'WhitelistedUsersDatabaseHandler'
     );
 
     {
@@ -312,7 +350,10 @@ task('mintToken', 'Mints test token to the given address')
   .addParam('address', 'The address to mint to')
   .addParam('amount', 'The amount of tokens to mint')
   .setAction(async ({ address, amount }) => {
-    const token = await getDeployedContract('TestToken');
+    const token = await getDeployedContract(
+      'TestToken',
+      '0x9B28089f8b07951A1232e89D9d659b2a4F88Fb1F'
+    );
 
     const tx = await token.mint(address, BigInt(amount));
     await tx.wait();

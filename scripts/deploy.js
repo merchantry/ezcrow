@@ -12,8 +12,19 @@ async function main() {
   const lhd = await deployContract('ListingsHandlerDeployer');
   const oksd = await deployContract('OrdersKeyStorageDeployer');
   const ohd = await deployContract('OrdersHandlerDeployer');
+  const multiOwnable = await deployContract('MultiOwnable');
 
-  const ezcrowRamp = await deployContract('EzcrowRamp');
+  const wudbHandler = await deployContract('WhitelistedUsersDatabaseHandler', [
+    multiOwnable.target,
+  ]);
+  const wudb = await deployContract('WhitelistedUsersDatabase', [
+    wudbHandler.target,
+  ]);
+
+  const ezcrowRamp = await deployContract('EzcrowRamp', [
+    multiOwnable.target,
+    wudb.target,
+  ]);
   const fiatTokenPairHandler = await deployContract('FiatTokenPairHandler', [
     ftpd.target,
     lksd.target,
@@ -23,6 +34,11 @@ async function main() {
     ezcrowRamp.target,
   ]);
   await ezcrowRamp.setFiatTokenPairHandler(fiatTokenPairHandler.target);
+
+  await wudbHandler.setWhitelistedUsersDatabase(wudb.target);
+  await wudbHandler.setFiatTokenPairHandler(fiatTokenPairHandler.target);
+  await wudbHandler.setCurrencySettingsFactory(ezcrowRamp.target);
+
   await deployContract('EzcrowRampQuery', [fiatTokenPairHandler.target]);
 }
 
