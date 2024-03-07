@@ -8,7 +8,6 @@ import {OrdersStatusKey} from "./OrdersStatusKey.sol";
 import {Listing, Order} from "../utils/structs.sol";
 import {Ownable} from "../utils/Ownable.sol";
 import {IOrdersKeyStorage} from "./interfaces/IOrdersKeyStorage.sol";
-import {OrderStatus} from "../utils/enums.sol";
 
 contract OrdersKeyStorage is
     IOrdersKeyStorage,

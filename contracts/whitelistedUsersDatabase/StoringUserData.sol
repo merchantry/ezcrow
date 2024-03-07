@@ -4,8 +4,6 @@ pragma solidity 0.8.20;
 import {Ownable} from "../utils/Ownable.sol";
 import {Strings} from "../utils/libraries/Strings.sol";
 import {UserData, UserPrivateData} from "../utils/structs.sol";
-import {IWhitelistedUsersDatabase} from "./interfaces/IWhitelistedUsersDatabase.sol";
-import {IWhitelistedUsersDatabaseErrors} from "./interfaces/IWhitelistedUsersDatabaseErrors.sol";
 
 contract StoringUserData {
     using Strings for string;

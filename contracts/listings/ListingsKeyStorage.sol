@@ -5,7 +5,6 @@ import {IListingsKeyStorage} from "./interfaces/IListingsKeyStorage.sol";
 import {UserListingIds} from "./UserListingIds.sol";
 import {Ownable} from "../utils/Ownable.sol";
 import {Listing} from "../utils/structs.sol";
-import {ListingAction} from "../utils/enums.sol";
 
 contract ListingsKeyStorage is IListingsKeyStorage, UserListingIds, Ownable {
     constructor(address owner) Ownable(owner) {}

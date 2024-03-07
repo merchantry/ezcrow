@@ -11,7 +11,7 @@ import {ICurrencySettings} from "./currencySettings/interfaces/ICurrencySettings
 import {WhitelistedUsersDatabaseConsumer} from "./whitelistedUsersDatabase/WhitelistedUsersDatabaseConsumer.sol";
 import {OrderActionSignable} from "./OrderActionSignable.sol";
 
-import {ListingAction, UserData, Listing, Order} from "./utils/structs.sol";
+import {ListingAction, Listing} from "./utils/structs.sol";
 import {OrderStatus} from "./utils/enums.sol";
 import {Strings} from "./utils/libraries/Strings.sol";
 import {OrderStatusHandler} from "./orders/libraries/OrderStatusHandler.sol";

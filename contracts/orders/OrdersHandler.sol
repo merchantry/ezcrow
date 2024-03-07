@@ -2,9 +2,8 @@
 pragma solidity 0.8.20;
 
 import {Listing, Order} from "../utils/structs.sol";
-import {OrderStatus, UserRole} from "../utils/enums.sol";
+import {OrderStatus} from "../utils/enums.sol";
 import {OrdersFactory} from "./OrdersFactory.sol";
-import {OrdersKeyStorage} from "./OrdersKeyStorage.sol";
 import {IOrdersKeyStorage} from "./interfaces/IOrdersKeyStorage.sol";
 import {IOrdersKeyStorageDeployer} from "./interfaces/IOrdersKeyStorageDeployer.sol";
 import {Ownable} from "../utils/Ownable.sol";

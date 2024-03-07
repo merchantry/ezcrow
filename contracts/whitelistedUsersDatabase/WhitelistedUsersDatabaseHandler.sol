@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {WhitelistedUsersDatabase} from "./WhitelistedUsersDatabase.sol";
 import {IWhitelistedUsersDatabase} from "./interfaces/IWhitelistedUsersDatabase.sol";
 import {IWhitelistedUsersDatabaseErrors} from "./interfaces/IWhitelistedUsersDatabaseErrors.sol";
 import {MultiOwnableConsumer} from "../multiOwnable/MultiOwnableConsumer.sol";

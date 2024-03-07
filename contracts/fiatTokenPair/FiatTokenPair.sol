@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
 import {IListingsHandler} from "../listings/interfaces/IListingsHandler.sol";
 import {IListingsEventHandler} from "../listings/interfaces/IListingsEventHandler.sol";
 import {IListingsEventHandlerErrors} from "../listings/interfaces/IListingsEventHandlerErrors.sol";
@@ -14,7 +11,7 @@ import {IOrdersEventHandler} from "../orders/interfaces/IOrdersEventHandler.sol"
 import {IOrdersEventHandlerErrors} from "../orders/interfaces/IOrdersEventHandlerErrors.sol";
 import {IOrdersHandler} from "../orders/interfaces/IOrdersHandler.sol";
 
-import {ListingAction, OrderStatus, UserRole} from "../utils/enums.sol";
+import {ListingAction, OrderStatus} from "../utils/enums.sol";
 import {Listing, Order, OrderStatusTree} from "../utils/structs.sol";
 import {Math} from "../utils/libraries/Math.sol";
 import {TransformUintToInt} from "../utils/libraries/TransformUintToInt.sol";
@@ -22,7 +19,6 @@ import {Ownable} from "../utils/Ownable.sol";
 
 import {IFiatTokenPair} from "./interfaces/IFiatTokenPair.sol";
 import {TokenHandler} from "../TokenHandler.sol";
-import {IWhitelistedUsersDatabase} from "../whitelistedUsersDatabase/interfaces/IWhitelistedUsersDatabase.sol";
 import {CurrencySettingsConsumer} from "../currencySettings/CurrencySettingsConsumer.sol";
 
 contract FiatTokenPair is

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {FiatTokenPair} from "./FiatTokenPair.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ICurrencySettings} from "../currencySettings/interfaces/ICurrencySettings.sol";
 import {Strings} from "../utils/libraries/Strings.sol";
-import {Ownable} from "../utils/Ownable.sol";
 import {IFiatTokenPairFactoryErrors} from "./interfaces/IFiatTokenPairFactoryErrors.sol";
 import {IFiatTokenPairDeployer} from "./interfaces/IFiatTokenPairDeployer.sol";
 import {IListingsHandlerDeployer} from "../listings/interfaces/IListingsHandlerDeployer.sol";

@@ -45,6 +45,7 @@ abstract contract OrderActionSignable is EIP712, Nonces {
         }
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() external view virtual returns (bytes32) {
         return _domainSeparatorV4();
     }

@@ -3,12 +3,9 @@ pragma solidity 0.8.20;
 
 import {ListingAction} from "../utils/enums.sol";
 import {Listing} from "../utils/structs.sol";
-import {Math} from "../utils/libraries/Math.sol";
 import {ArrayUtils} from "../utils/libraries/ArrayUtils.sol";
 import {ListingsFactory} from "./ListingsFactory.sol";
-import {ListingsKeyStorage} from "./ListingsKeyStorage.sol";
 import {Ownable} from "../utils/Ownable.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IListingsHandlerErrors} from "./interfaces/IListingsHandlerErrors.sol";
 import {IListingsHandler} from "./interfaces/IListingsHandler.sol";
 import {IListingsEventHandler} from "./interfaces/IListingsEventHandler.sol";
