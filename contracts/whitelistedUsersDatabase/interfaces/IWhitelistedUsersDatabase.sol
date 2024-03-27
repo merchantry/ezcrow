@@ -16,20 +16,13 @@ interface IWhitelistedUsersDatabase {
         address user,
         string memory currency,
         string memory telegramHandle,
-        string memory paymentMethod,
-        string memory paymentData
+        string[] memory paymentMethod
     ) external;
 
     function isWhitelisted(address user, string memory currency) external view returns (bool);
 
-    function getUserPreparedData(
-        address user,
-        string memory currency
-    ) external view returns (UserData memory);
-
     function getUserData(
         address user,
-        string memory currency,
-        bool showPrivateInfo
+        string memory currency
     ) external view returns (UserData memory);
 }

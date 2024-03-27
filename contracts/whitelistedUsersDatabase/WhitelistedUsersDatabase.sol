@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import {Ownable} from "../utils/Ownable.sol";
 import {Strings} from "../utils/libraries/Strings.sol";
-import {UserData, UserPrivateData} from "../utils/structs.sol";
+import {UserData} from "../utils/structs.sol";
 import {StoringUserData} from "./StoringUserData.sol";
 import {IWhitelistedUsersDatabase} from "./interfaces/IWhitelistedUsersDatabase.sol";
 import {IWhitelistedUsersDatabaseErrors} from "./interfaces/IWhitelistedUsersDatabaseErrors.sol";
@@ -22,33 +22,15 @@ contract WhitelistedUsersDatabase is
         address user,
         string memory currency,
         string memory telegramHandle,
-        string memory paymentMethod,
-        string memory paymentData
+        string[] memory paymentMethods
     ) external onlyOwner {
-        bool whitelisted = false;
-        uint256 profileNonce = _getUserPreparedData(user, currency).profileNonce + 1;
-
-        _setUserPreparedData(
-            user,
-            currency,
-            UserData(
-                profileNonce,
-                user,
-                currency,
-                telegramHandle,
-                whitelisted,
-                UserPrivateData(paymentMethod, paymentData)
-            )
-        );
+        _setUserData(user, currency, UserData(user, currency, telegramHandle, paymentMethods));
 
         emit UserDataUpdated(user, currency);
     }
 
     function whitelistUser(address user, string memory currency) external onlyOwner {
-        UserData memory data = _getUserPreparedData(user, currency);
-        data.whitelisted = true;
-
-        _setUserData(user, currency, data);
+        _setWhitelistStatus(user, currency, true);
 
         emit UserWhitelisted(user, currency);
     }
@@ -59,29 +41,14 @@ contract WhitelistedUsersDatabase is
         emit UserDelisted(user, currency);
     }
 
-    function getUserPreparedData(
+    function getUserData(
         address user,
         string memory currency
     ) external view onlyOwner returns (UserData memory) {
-        return _getUserPreparedData(user, currency);
-    }
-
-    function getUserData(
-        address user,
-        string memory currency,
-        bool showPrivateInfo
-    ) external view onlyOwner returns (UserData memory) {
-        UserData memory data = _getUserData(user, currency);
-
-        if (!showPrivateInfo) {
-            data.privateData.paymentMethod = "";
-            data.privateData.paymentData = "";
-        }
-
-        return data;
+        return _getUserData(user, currency);
     }
 
     function isWhitelisted(address user, string memory currency) external view returns (bool) {
-        return _getUserData(user, currency).whitelisted;
+        return _getUserWhiteListStatus(user, currency);
     }
 }

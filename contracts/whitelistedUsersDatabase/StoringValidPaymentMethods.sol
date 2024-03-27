@@ -13,9 +13,11 @@ abstract contract StoringValidPaymentMethods {
     mapping(bytes32 => bool) private validPaymentMethods;
     string[] private validPaymentMethodsList;
 
-    modifier validPaymentMethod(string memory paymentMethod) {
-        if (!isValidPaymentMethod(paymentMethod)) {
-            revert PaymentMethodDoesNotExist(paymentMethod);
+    modifier paymentMethodsAreValid(string[] memory paymentMethods) {
+        for (uint256 i = 0; i < paymentMethods.length; i++) {
+            if (!isValidPaymentMethod(paymentMethods[i])) {
+                revert PaymentMethodDoesNotExist(paymentMethods[i]);
+            }
         }
 
         _;

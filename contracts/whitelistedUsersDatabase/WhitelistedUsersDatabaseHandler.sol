@@ -6,7 +6,7 @@ import {IWhitelistedUsersDatabaseErrors} from "./interfaces/IWhitelistedUsersDat
 import {MultiOwnableConsumer} from "../multiOwnable/MultiOwnableConsumer.sol";
 import {IFiatTokenPairHandler} from "../fiatTokenPair/interfaces/IFiatTokenPairHandler.sol";
 import {CurrencySettingsFactoryConsumer} from "../currencySettings/CurrencySettingsFactoryConsumer.sol";
-import {UserData, Order} from "../utils/structs.sol";
+import {UserData} from "../utils/structs.sol";
 import {OrderStatus} from "../utils/enums.sol";
 import {OrderStatusHandler} from "../orders/libraries/OrderStatusHandler.sol";
 import {StoringValidPaymentMethods} from "./StoringValidPaymentMethods.sol";
@@ -80,22 +80,14 @@ contract WhitelistedUsersDatabaseHandler is
      *
      * @param currency Symbol of the currency to be updated for
      * @param telegramHandle User's telegram handle
-     * @param paymentMethod User's payment method
-     * @param paymentData User's payment data
+     * @param paymentMethods User's payment methods
      */
     function updateUser(
         string memory currency,
         string memory telegramHandle,
-        string memory paymentMethod,
-        string memory paymentData
-    ) external currencyExists(currency) validPaymentMethod(paymentMethod) {
-        whitelistedUsersDatabase.updateUser(
-            _msgSender(),
-            currency,
-            telegramHandle,
-            paymentMethod,
-            paymentData
-        );
+        string[] memory paymentMethods
+    ) external currencyExists(currency) paymentMethodsAreValid(paymentMethods) {
+        whitelistedUsersDatabase.updateUser(_msgSender(), currency, telegramHandle, paymentMethods);
     }
 
     function isWhitelisted(address user, string memory currency) external view returns (bool) {
@@ -103,28 +95,7 @@ contract WhitelistedUsersDatabaseHandler is
     }
 
     /**
-     * @dev Returns the prepared data for the given user and currency. Once the user
-     * is whitelisted by the owner, the prepared data is moved to live data.
-     *
-     * @param user Address of the user to get the data for
-     * @param currency Symbol of the currency to get the data for
-     */
-    function getUserPreparedData(
-        address user,
-        string memory currency
-    ) external view currencyExists(currency) returns (UserData memory) {
-        address sender = _msgSender();
-
-        if (!isOwner(sender) && sender != user) {
-            revert UserNotAuthorized(sender);
-        }
-
-        return whitelistedUsersDatabase.getUserPreparedData(user, currency);
-    }
-
-    /**
      * @dev Returns the live data for the given user and currency.
-     * Only shows the private info if the sender is the owner or the user.
      *
      * @param user Address of the user to get the data for
      * @param currency Symbol of the currency to get the data for
@@ -133,46 +104,6 @@ contract WhitelistedUsersDatabaseHandler is
         address user,
         string memory currency
     ) external view currencyExists(currency) returns (UserData memory) {
-        return
-            whitelistedUsersDatabase.getUserData(
-                user,
-                currency,
-                isOwner(_msgSender()) || _msgSender() == user
-            );
-    }
-
-    /**
-     * @dev Returns user data and conditially hides private info
-     * based on the order status and user role. If the sender is the owner,
-     * the user, or a participant in the order with an active status with the user,
-     * the private info is shown.
-     *
-     * @param user Address of the user to get the data for
-     * @param token Symbol of the token of the order
-     * @param currency Symbol of the currency of the order
-     * @param orderId Id of the order
-     */
-    function getUserDataWithOrder(
-        address user,
-        string memory token,
-        string memory currency,
-        uint256 orderId
-    ) external view returns (UserData memory) {
-        Order memory order = fiatTokenPairHandler.getOrdersHandler(token, currency).getOrder(
-            orderId
-        );
-        OrderStatus orderStatus = order.statusHistory.getCurrentStatus();
-
-        address sender = _msgSender();
-        bool orderIsActive = orderStatus == OrderStatus.AssetsConfirmed ||
-            orderStatus == OrderStatus.TokensDeposited ||
-            orderStatus == OrderStatus.PaymentSent ||
-            orderStatus == OrderStatus.InDispute;
-        bool userIsParticipant = sender == order.creator || sender == order.listingCreator;
-        bool showPrivateInfo = isOwner(sender) ||
-            sender == user ||
-            (userIsParticipant && orderIsActive);
-
-        return whitelistedUsersDatabase.getUserData(user, currency, showPrivateInfo);
+        return whitelistedUsersDatabase.getUserData(user, currency);
     }
 }

@@ -6,8 +6,7 @@ const { ethers } = require('hardhat');
 
 const CURRENCY = 'USD';
 const TELEGRAM_HANDLE = 'userA_telegram';
-const PAYMENT_METHOD = 'PayPal';
-const PAYMENT_DATA = 'userA_paypal@example.com';
+const PAYMENT_METHODS = ['PayPal', 'Bank Transfer'];
 
 describe('WhitelistedUsersDatabase', function () {
   async function deployFixture() {
@@ -33,17 +32,16 @@ describe('WhitelistedUsersDatabase', function () {
   });
 
   describe('updateUser', function () {
-    it('updates prepared user data', async function () {
+    it('updates user data', async function () {
       const { whitelistedUsersDatabase, userA } = this;
 
       await whitelistedUsersDatabase.updateUser(
         userA.address,
         CURRENCY,
         TELEGRAM_HANDLE,
-        PAYMENT_METHOD,
-        PAYMENT_DATA
+        PAYMENT_METHODS
       );
-      const userData = await whitelistedUsersDatabase.getUserPreparedData(
+      const userData = await whitelistedUsersDatabase.getUserData(
         userA.address,
         CURRENCY
       );
@@ -51,8 +49,7 @@ describe('WhitelistedUsersDatabase', function () {
       expect(userData.user).to.equal(userA.address);
       expect(userData.currency).to.equal(CURRENCY);
       expect(userData.telegramHandle).to.equal(TELEGRAM_HANDLE);
-      expect(userData.privateData.paymentMethod).to.equal(PAYMENT_METHOD);
-      expect(userData.privateData.paymentData).to.equal(PAYMENT_DATA);
+      expect(userData.paymentMethods).to.deep.equal(PAYMENT_METHODS);
     });
 
     it('reverts if not accessed by owner', async function () {
@@ -61,13 +58,7 @@ describe('WhitelistedUsersDatabase', function () {
       await expect(
         whitelistedUsersDatabase
           .connect(userA)
-          .updateUser(
-            userA.address,
-            CURRENCY,
-            TELEGRAM_HANDLE,
-            PAYMENT_METHOD,
-            PAYMENT_DATA
-          )
+          .updateUser(userA.address, CURRENCY, TELEGRAM_HANDLE, PAYMENT_METHODS)
       ).to.be.revertedWithCustomError(
         whitelistedUsersDatabase,
         'OwnableUnauthorizedAccount'
@@ -82,8 +73,7 @@ describe('WhitelistedUsersDatabase', function () {
           userA.address,
           CURRENCY,
           TELEGRAM_HANDLE,
-          PAYMENT_METHOD,
-          PAYMENT_DATA
+          PAYMENT_METHODS
         )
       )
         .to.emit(whitelistedUsersDatabase, 'UserDataUpdated')
@@ -102,30 +92,6 @@ describe('WhitelistedUsersDatabase', function () {
       );
 
       expect(isWhitelisted).to.be.true;
-    });
-
-    it('copies prepared user data to user data', async function () {
-      const { whitelistedUsersDatabase, userA } = this;
-
-      await whitelistedUsersDatabase.updateUser(
-        userA.address,
-        CURRENCY,
-        TELEGRAM_HANDLE,
-        PAYMENT_METHOD,
-        PAYMENT_DATA
-      );
-      await whitelistedUsersDatabase.whitelistUser(userA.address, CURRENCY);
-      const userData = await whitelistedUsersDatabase.getUserData(
-        userA.address,
-        CURRENCY,
-        true
-      );
-
-      expect(userData.user).to.equal(userA.address);
-      expect(userData.currency).to.equal(CURRENCY);
-      expect(userData.telegramHandle).to.equal(TELEGRAM_HANDLE);
-      expect(userData.privateData.paymentMethod).to.equal(PAYMENT_METHOD);
-      expect(userData.privateData.paymentData).to.equal(PAYMENT_DATA);
     });
 
     it('reverts if not accessed by owner', async function () {
@@ -194,99 +160,34 @@ describe('WhitelistedUsersDatabase', function () {
   });
 
   describe('getUserData', function () {
-    it('returns user data with private info', async function () {
+    it('returns user data', async function () {
       const { whitelistedUsersDatabase, userA } = this;
 
       await whitelistedUsersDatabase.updateUser(
         userA.address,
         CURRENCY,
         TELEGRAM_HANDLE,
-        PAYMENT_METHOD,
-        PAYMENT_DATA
+        PAYMENT_METHODS
       );
       await whitelistedUsersDatabase.whitelistUser(userA.address, CURRENCY);
       const userData = await whitelistedUsersDatabase.getUserData(
-        userA.address,
-        CURRENCY,
-        true
-      );
-
-      expect(userData.user).to.equal(userA.address);
-      expect(userData.currency).to.equal(CURRENCY);
-      expect(userData.telegramHandle).to.equal(TELEGRAM_HANDLE);
-      expect(userData.privateData.paymentMethod).to.equal(PAYMENT_METHOD);
-      expect(userData.privateData.paymentData).to.equal(PAYMENT_DATA);
-    });
-
-    it('returns user data without private info', async function () {
-      const { whitelistedUsersDatabase, userA } = this;
-
-      await whitelistedUsersDatabase.updateUser(
-        userA.address,
-        CURRENCY,
-        TELEGRAM_HANDLE,
-        PAYMENT_METHOD,
-        PAYMENT_DATA
-      );
-      await whitelistedUsersDatabase.whitelistUser(userA.address, CURRENCY);
-      const userData = await whitelistedUsersDatabase.getUserData(
-        userA.address,
-        CURRENCY,
-        false
-      );
-
-      expect(userData.user).to.equal(userA.address);
-      expect(userData.currency).to.equal(CURRENCY);
-      expect(userData.telegramHandle).to.equal(TELEGRAM_HANDLE);
-      expect(userData.privateData.paymentMethod).to.equal('');
-      expect(userData.privateData.paymentData).to.equal('');
-    });
-
-    it('reverts if not accessed by owner', async function () {
-      const { whitelistedUsersDatabase, userA } = this;
-
-      await expect(
-        whitelistedUsersDatabase
-          .connect(userA)
-          .getUserData(userA.address, CURRENCY, true)
-      ).to.be.revertedWithCustomError(
-        whitelistedUsersDatabase,
-        'OwnableUnauthorizedAccount'
-      );
-    });
-  });
-
-  describe('getUserPreparedData', function () {
-    it('returns user prepared data', async function () {
-      const { whitelistedUsersDatabase, userA } = this;
-
-      await whitelistedUsersDatabase.updateUser(
-        userA.address,
-        CURRENCY,
-        TELEGRAM_HANDLE,
-        PAYMENT_METHOD,
-        PAYMENT_DATA
-      );
-      const userData = await whitelistedUsersDatabase.getUserPreparedData(
         userA.address,
         CURRENCY
       );
 
-      expect(userData.profileNonce).to.equal(1);
       expect(userData.user).to.equal(userA.address);
       expect(userData.currency).to.equal(CURRENCY);
       expect(userData.telegramHandle).to.equal(TELEGRAM_HANDLE);
-      expect(userData.privateData.paymentMethod).to.equal(PAYMENT_METHOD);
-      expect(userData.privateData.paymentData).to.equal(PAYMENT_DATA);
+      expect(userData.paymentMethods).to.deep.equal(PAYMENT_METHODS);
     });
 
     it('reverts if not accessed by owner', async function () {
-      const { whitelistedUsersDatabase, userA, userB } = this;
+      const { whitelistedUsersDatabase, userA } = this;
 
       await expect(
         whitelistedUsersDatabase
           .connect(userA)
-          .getUserPreparedData(userB.address, CURRENCY)
+          .getUserData(userA.address, CURRENCY)
       ).to.be.revertedWithCustomError(
         whitelistedUsersDatabase,
         'OwnableUnauthorizedAccount'
