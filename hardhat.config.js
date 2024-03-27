@@ -29,6 +29,11 @@ module.exports = {
       accounts,
       chainId: 40,
     },
+    arbitrumsepolia: {
+      url: 'https://sepolia-rollup.arbitrum.io/rpc',
+      accounts,
+      chainId: 421614,
+    },
   },
   contractSizer: {
     alphaSort: true,
