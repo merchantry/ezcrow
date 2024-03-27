@@ -9,6 +9,9 @@ const stringIdsToObject = string => {
   return ids;
 };
 
+const stringToArray = string => string.split(',');
+
 module.exports = {
   stringIdsToObject,
+  stringToArray,
 };
