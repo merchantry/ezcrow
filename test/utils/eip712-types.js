@@ -20,6 +20,14 @@ module.exports = mapValues(
       accept: 'bool',
       nonce: 'uint256',
     },
+    OrderCreatePermit: {
+      owner: 'address',
+      tokenSymbol: 'string',
+      currencySymbol: 'string',
+      listingId: 'uint256',
+      tokenAmount: 'uint256',
+      nonce: 'uint256',
+    },
   },
   formatType
 );

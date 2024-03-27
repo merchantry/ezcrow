@@ -1006,6 +1006,7 @@ describe('FiatTokenPair', function () {
           tokenAmount,
           owner.address
         );
+        await ordersHandler.rejectOrder(INITIAL_ORDER_ID, owner.address);
         await ordersHandler.createOrder(
           INITIAL_LISTING_ID,
           tokenAmount,
@@ -1093,6 +1094,93 @@ describe('FiatTokenPair', function () {
             'OrderAmountGreaterThanListingMaxPerOrder'
           )
           .withArgs(orderPrice, max);
+      });
+
+      it('reverts if order creator already has an active order on the same listing', async function () {
+        const { fiatTokenPair, ordersHandler, owner } = this;
+        const { tokenAmount } = this.listingData;
+
+        await ordersHandler.createOrder(
+          INITIAL_LISTING_ID,
+          tokenAmount,
+          owner.address
+        );
+
+        await expect(
+          ordersHandler.createOrder(
+            INITIAL_LISTING_ID,
+            tokenAmount,
+            owner.address
+          )
+        )
+          .to.be.revertedWithCustomError(
+            fiatTokenPair,
+            'UserAlreadyHasActiveOrders'
+          )
+          .withArgs(owner.address, INITIAL_LISTING_ID);
+      });
+
+      it('creates a new order if all previous orders on the same listing are cancelled', async function () {
+        const { ordersHandler, owner } = this;
+        const { tokenAmount } = this.listingData;
+
+        await ordersHandler.createOrder(
+          INITIAL_LISTING_ID,
+          tokenAmount,
+          owner.address
+        );
+
+        await ordersHandler.rejectOrder(INITIAL_ORDER_ID, owner.address);
+
+        await ordersHandler.createOrder(
+          INITIAL_LISTING_ID,
+          tokenAmount,
+          owner.address
+        );
+
+        const orders = await ordersHandler.getOrders(MAX_ITEMS);
+
+        expect(orders).to.have.lengthOf(2);
+      });
+
+      it('creates a new order if all previous orders on the same listing are completed', async function () {
+        const {
+          fiatTokenPair,
+          ordersHandler,
+          token,
+          owner: listingCreator,
+          otherUser: orderCreator,
+        } = this;
+        const { tokenAmount } = this.listingData;
+        const users = [listingCreator, orderCreator];
+
+        await ordersHandler.createOrder(
+          INITIAL_LISTING_ID,
+          tokenAmount,
+          orderCreator.address
+        );
+
+        await token.mint(orderCreator.address, tokenAmount);
+        await token
+          .connect(orderCreator)
+          .approve(fiatTokenPair.target, tokenAmount);
+
+        for (let i = 0; i < 4; i++) {
+          await ordersHandler.acceptOrder(
+            INITIAL_ORDER_ID,
+            users[i % 2].address
+          );
+        }
+
+        await ordersHandler.createOrder(
+          INITIAL_LISTING_ID,
+          tokenAmount,
+          orderCreator.address
+        );
+
+        const orders = await ordersHandler.getOrders(MAX_ITEMS);
+
+        expect(orders).to.have.lengthOf(2);
       });
 
       it('keeps orders under creator key', async function () {
@@ -1359,6 +1447,7 @@ describe('FiatTokenPair', function () {
               otherUser: orderCreator,
             } = this;
             const { tokenAmount } = this.listingData;
+            const users = [listingCreator, orderCreator];
 
             await ordersHandler.createOrder(
               INITIAL_LISTING_ID,
@@ -1366,15 +1455,17 @@ describe('FiatTokenPair', function () {
               orderCreator.address
             );
 
+            for (let i = 0; i < 4; i++) {
+              await ordersHandler.acceptOrder(
+                INITIAL_ORDER_ID,
+                users[i % 2].address
+              );
+            }
+
             await ordersHandler.createOrder(
               INITIAL_LISTING_ID,
               tokenAmount,
               orderCreator.address
-            );
-
-            await ordersHandler.acceptOrder(
-              INITIAL_ORDER_ID,
-              listingCreator.address
             );
 
             await expect(

@@ -40,4 +40,35 @@ library ArrayUtils {
 
         return result;
     }
+
+    function contains(uint256[] memory arr, uint256 value) internal pure returns (bool) {
+        for (uint256 i = 0; i < arr.length; i++) {
+            if (arr[i] == value) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function getIntersection(
+        uint256[] memory arr1,
+        uint256[] memory arr2
+    ) internal pure returns (uint256[] memory) {
+        uint256[] memory result = new uint256[](arr1.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < arr1.length; i++) {
+            if (contains(arr2, arr1[i])) {
+                result[count] = arr1[i];
+                count++;
+            }
+        }
+
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            mstore(result, count)
+        }
+
+        return result;
+    }
 }

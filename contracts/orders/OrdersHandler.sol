@@ -40,8 +40,12 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
         _;
     }
 
-    modifier validOrderData(uint256 listingId, uint256 tokenAmount) {
-        eventHandler.beforeOrderCreate(listingId, tokenAmount);
+    modifier validOrderData(
+        uint256 listingId,
+        uint256 tokenAmount,
+        address creator
+    ) {
+        eventHandler.beforeOrderCreate(listingId, tokenAmount, creator);
 
         _;
     }
@@ -83,7 +87,7 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
         uint256 listingId,
         uint256 tokenAmount,
         address creator
-    ) external onlyOwner validOrderData(listingId, tokenAmount) {
+    ) external onlyOwner validOrderData(listingId, tokenAmount, creator) {
         Listing memory listing = eventHandler.getListing(listingId);
 
         Order memory order = _createOrder(
@@ -211,5 +215,22 @@ contract OrdersHandler is OrdersFactory, IOrdersHandler, IOrdersHandlerErrors, O
      */
     function getUserOrders(address user, uint256 maxOrders) external view returns (Order[] memory) {
         return _getOrdersFromIds(ordersKeyStorage.getUserOrderIds(user).sliceFromEnd(maxOrders));
+    }
+
+    /**
+     * @dev Returns all orders with the given user and listing.
+     */
+    function getUserListingOrders(
+        address user,
+        uint256 listingId,
+        uint256 maxOrders
+    ) external view returns (Order[] memory) {
+        return
+            _getOrdersFromIds(
+                ordersKeyStorage
+                    .getListingOrderIds(listingId)
+                    .getIntersection(ordersKeyStorage.getUserOrderIds(user))
+                    .sliceFromEnd(maxOrders)
+            );
     }
 }

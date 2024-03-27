@@ -35,6 +35,8 @@ contract FiatTokenPair is
     using TransformUintToInt for uint8;
     using ListingsUserRoleHandler for address;
 
+    uint256 private constant MAX_ORDERS = 750;
+
     /**
      * @dev Immutable representative value of the pair symbol. It's used to
      * identify the pair in the FiatTokenPairFactory by generating a hash
@@ -88,15 +90,13 @@ contract FiatTokenPair is
 
     /**
      * Checks if all orders for a listing have a status in the given array
-     * @param listingId of the Listing to check
+     * @param orders Array of orders to check
      * @param statuses Array of possible OrderStatus values
      */
     function allOrdersHaveStatus(
-        uint256 listingId,
+        Order[] memory orders,
         OrderStatus[] memory statuses
-    ) private view returns (bool) {
-        Order[] memory orders = ordersHandler.getListingOrders(listingId, 750);
-
+    ) private pure returns (bool) {
         for (uint256 i = 0; i < orders.length; i++) {
             OrderStatus orderStatus = orders[i].statusHistory.getCurrentStatus();
 
@@ -197,10 +197,11 @@ contract FiatTokenPair is
      *  @dev Checks whether the listing can be updated. If not, it reverts.
      */
     function beforeListingUpdate(uint256 listingId) external view {
+        Order[] memory orders = ordersHandler.getListingOrders(listingId, MAX_ORDERS);
         OrderStatus[] memory accepted = new OrderStatus[](1);
         accepted[0] = OrderStatus.Cancelled;
 
-        if (!allOrdersHaveStatus(listingId, accepted)) {
+        if (!allOrdersHaveStatus(orders, accepted)) {
             revert ListingCannotBeUpdated(listingId);
         }
     }
@@ -209,11 +210,12 @@ contract FiatTokenPair is
      *  @dev Checks whether the listing can be deleted. If not, it reverts.
      */
     function beforeListingDelete(uint256 listingId) external view {
+        Order[] memory orders = ordersHandler.getListingOrders(listingId, MAX_ORDERS);
         OrderStatus[] memory accepted = new OrderStatus[](2);
         accepted[0] = OrderStatus.Cancelled;
         accepted[1] = OrderStatus.Completed;
 
-        if (!allOrdersHaveStatus(listingId, accepted)) {
+        if (!allOrdersHaveStatus(orders, accepted)) {
             revert ListingCannotBeDeleted(listingId);
         }
     }
@@ -305,8 +307,13 @@ contract FiatTokenPair is
         return calculateTotalTokenPrice(tokenAmount, listing.price);
     }
 
-    function beforeOrderCreate(uint256 listingId, uint256 tokenAmount) external view {
+    function beforeOrderCreate(
+        uint256 listingId,
+        uint256 tokenAmount,
+        address creator
+    ) external view {
         Listing memory listing = getListing(listingId);
+        Order[] memory orders = ordersHandler.getUserListingOrders(creator, listingId, 1000);
 
         uint256 fiatAmount = calculateTotalTokenPrice(tokenAmount, listing.price);
 
@@ -314,6 +321,14 @@ contract FiatTokenPair is
             listing.minPricePerOrder,
             calculateTotalTokenPrice(listing.availableTokenAmount, listing.price)
         );
+
+        OrderStatus[] memory accepted = new OrderStatus[](2);
+        accepted[0] = OrderStatus.Cancelled;
+        accepted[1] = OrderStatus.Completed;
+
+        if (!allOrdersHaveStatus(orders, accepted)) {
+            revert UserAlreadyHasActiveOrders(creator, listingId);
+        }
 
         if (fiatAmount < minOrderAmount) {
             revert OrderAmountLessThanListingMinPerOrder(fiatAmount, minOrderAmount);

@@ -1,12 +1,9 @@
 const { ethers } = require('hardhat');
 const { getDomain } = require('./eip712');
-const { OrderActionPermit } = require('./eip712-types');
 
-const signData = (signer, contract, message) =>
+const signData = (signer, contract, types, message) =>
   getDomain(contract)
-    .then(domain =>
-      signer.signTypedData(domain, { OrderActionPermit }, message)
-    )
+    .then(domain => signer.signTypedData(domain, types, message))
     .then(ethers.Signature.from);
 
 module.exports = {

@@ -91,4 +91,19 @@ contract EzcrowRampQuery {
                 maxOrders
             );
     }
+
+    function getUserListingOrders(
+        string memory tokenSymbol,
+        string memory currencySymbol,
+        address user,
+        uint256 listingId,
+        uint256 maxOrders
+    ) external view returns (Order[] memory) {
+        return
+            fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).getUserListingOrders(
+                user,
+                listingId,
+                maxOrders
+            );
+    }
 }

@@ -9,7 +9,10 @@ import {TokenFactory} from "./token/TokenFactory.sol";
 import {IListingsHandler} from "./listings/interfaces/IListingsHandler.sol";
 import {ICurrencySettings} from "./currencySettings/interfaces/ICurrencySettings.sol";
 import {WhitelistedUsersDatabaseConsumer} from "./whitelistedUsersDatabase/WhitelistedUsersDatabaseConsumer.sol";
-import {OrderActionSignable} from "./OrderActionSignable.sol";
+
+import {OrderActionSignable} from "./signableFunction/OrderActionSignable.sol";
+import {OrderCreateSignable} from "./signableFunction/OrderCreateSignable.sol";
+import {SignableFunction} from "./signableFunction/SignableFunction.sol";
 
 import {ListingAction, Listing} from "./utils/structs.sol";
 import {OrderStatus} from "./utils/enums.sol";
@@ -21,6 +24,7 @@ contract EzcrowRamp is
     CurrencySettingsHandler,
     TokenFactory,
     OrderActionSignable,
+    OrderCreateSignable,
     WhitelistedUsersDatabaseConsumer,
     MultiOwnableConsumer
 {
@@ -33,7 +37,7 @@ contract EzcrowRamp is
         address multiOwnable,
         address whitelistedUsersDatabase
     )
-        OrderActionSignable("EzcrowRamp")
+        SignableFunction("EzcrowRamp")
         MultiOwnableConsumer(multiOwnable)
         WhitelistedUsersDatabaseConsumer(whitelistedUsersDatabase)
     {}
@@ -222,25 +226,34 @@ contract EzcrowRamp is
     }
 
     /**
-     * @dev Creates a new order for the given token and currency symbols and listing id.
+     * @dev This is a signable function. It allows the users to sign a transaction
+     * and for it to be triggered by anyone. Which potentially allows for a gasless transaction
+     * from the user's side. Creates a new order for the given token and currency symbols and listing id.
      * The token and currency must be registered before calling this function and the listing
      * must exist in the fiatTokenPair.
      *
+     * @param owner Address of the owner of the signature and user interacting with the order
      * @param tokenSymbol of the token to be traded in the pair
      * @param currencySymbol of the currency to be traded in the pair
      * @param listingId Id of the listing the order is for
      * @param tokenAmount Amount of tokens to be bought or sold
      */
     function createOrder(
+        address owner,
         string memory tokenSymbol,
         string memory currencySymbol,
         uint256 listingId,
-        uint256 tokenAmount
+        uint256 tokenAmount,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external {
+        signOrderCreate(owner, tokenSymbol, currencySymbol, listingId, tokenAmount, v, r, s);
+
         fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).createOrder(
             listingId,
             tokenAmount,
-            _msgSender()
+            owner
         );
     }
 
@@ -263,7 +276,7 @@ contract EzcrowRamp is
         bytes32 r,
         bytes32 s
     ) external {
-        validateSignature(owner, tokenSymbol, currencySymbol, orderId, true, v, r, s);
+        signOrderAction(owner, tokenSymbol, currencySymbol, orderId, true, v, r, s);
 
         fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).acceptOrder(
             orderId,
@@ -290,7 +303,7 @@ contract EzcrowRamp is
         bytes32 r,
         bytes32 s
     ) external {
-        validateSignature(owner, tokenSymbol, currencySymbol, orderId, false, v, r, s);
+        signOrderAction(owner, tokenSymbol, currencySymbol, orderId, false, v, r, s);
 
         fiatTokenPairHandler.getOrdersHandler(tokenSymbol, currencySymbol).rejectOrder(
             orderId,

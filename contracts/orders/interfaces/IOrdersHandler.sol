@@ -24,4 +24,10 @@ interface IOrdersHandler {
     ) external view returns (Order[] memory);
 
     function getUserOrders(address user, uint256 maxOrders) external view returns (Order[] memory);
+
+    function getUserListingOrders(
+        address user,
+        uint256 listingId,
+        uint256 maxOrders
+    ) external view returns (Order[] memory);
 }

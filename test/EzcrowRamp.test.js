@@ -12,6 +12,10 @@ const {
   setupRampAndCreateListingAndOrder,
   setupOrderAndPutInDispute,
 } = require('./utils/setups');
+const {
+  OrderActionPermit,
+  OrderCreatePermit,
+} = require('./utils/eip712-types');
 
 const TOKEN_NAME = 'Test Token';
 const TOKEN_SYMBOL = 'TT';
@@ -734,14 +738,30 @@ describe('EzcrowRamp', function () {
       const { ezcrowRamp, ezcrowRampQuery, otherUser: orderCreator } = this;
       const { tokenAmount } = this.listingData;
 
-      await ezcrowRamp
-        .connect(orderCreator)
-        .createOrder(
-          TOKEN_SYMBOL,
-          CURRENCY_SYMBOL,
-          INITIAL_LISTING_ID,
-          tokenAmount
-        );
+      const { v, r, s } = await signData(
+        orderCreator,
+        ezcrowRamp,
+        { OrderCreatePermit },
+        {
+          owner: orderCreator.address,
+          tokenSymbol: TOKEN_SYMBOL,
+          currencySymbol: CURRENCY_SYMBOL,
+          listingId: INITIAL_LISTING_ID,
+          tokenAmount,
+          nonce: 0,
+        }
+      );
+
+      await ezcrowRamp.createOrder(
+        orderCreator.address,
+        TOKEN_SYMBOL,
+        CURRENCY_SYMBOL,
+        INITIAL_LISTING_ID,
+        tokenAmount,
+        v,
+        r,
+        s
+      );
 
       const order = await ezcrowRampQuery.getOrder(
         TOKEN_SYMBOL,
@@ -767,15 +787,31 @@ describe('EzcrowRamp', function () {
       const tokenSymbol = 'BTC';
       const currencySymbol = 'AUD';
 
+      const { v, r, s } = await signData(
+        orderCreator,
+        ezcrowRamp,
+        { OrderCreatePermit },
+        {
+          owner: orderCreator.address,
+          tokenSymbol,
+          currencySymbol,
+          listingId: INITIAL_LISTING_ID,
+          tokenAmount,
+          nonce: 0,
+        }
+      );
+
       await expect(
-        ezcrowRamp
-          .connect(orderCreator)
-          .createOrder(
-            tokenSymbol,
-            currencySymbol,
-            INITIAL_LISTING_ID,
-            tokenAmount
-          )
+        ezcrowRamp.createOrder(
+          orderCreator.address,
+          tokenSymbol,
+          currencySymbol,
+          INITIAL_LISTING_ID,
+          tokenAmount,
+          v,
+          r,
+          s
+        )
       )
         .to.be.revertedWithCustomError(
           fiatTokenPairHandler,
@@ -815,14 +851,19 @@ describe('EzcrowRamp', function () {
     it('accepts an order', async function () {
       const { ezcrowRamp, ezcrowRampQuery, owner: listingCreator } = this;
 
-      const { v, r, s } = await signData(listingCreator, ezcrowRamp, {
-        owner: listingCreator.address,
-        tokenSymbol: TOKEN_SYMBOL,
-        currencySymbol: CURRENCY_SYMBOL,
-        orderId: INITIAL_ORDER_ID,
-        accept: true,
-        nonce: 0,
-      });
+      const { v, r, s } = await signData(
+        listingCreator,
+        ezcrowRamp,
+        { OrderActionPermit },
+        {
+          owner: listingCreator.address,
+          tokenSymbol: TOKEN_SYMBOL,
+          currencySymbol: CURRENCY_SYMBOL,
+          orderId: INITIAL_ORDER_ID,
+          accept: true,
+          nonce: 0,
+        }
+      );
 
       await ezcrowRamp.acceptOrder(
         listingCreator.address,
@@ -852,14 +893,19 @@ describe('EzcrowRamp', function () {
       const tokenSymbol = 'BTC';
       const currencySymbol = 'AUD';
 
-      const { v, r, s } = await signData(listingCreator, ezcrowRamp, {
-        owner: listingCreator.address,
-        tokenSymbol,
-        currencySymbol,
-        orderId: INITIAL_ORDER_ID,
-        accept: true,
-        nonce: 0,
-      });
+      const { v, r, s } = await signData(
+        listingCreator,
+        ezcrowRamp,
+        { OrderActionPermit },
+        {
+          owner: listingCreator.address,
+          tokenSymbol,
+          currencySymbol,
+          orderId: INITIAL_ORDER_ID,
+          accept: true,
+          nonce: 0,
+        }
+      );
 
       await expect(
         ezcrowRamp.acceptOrder(
@@ -910,14 +956,19 @@ describe('EzcrowRamp', function () {
     it('rejects an order', async function () {
       const { ezcrowRamp, ezcrowRampQuery, owner: listingCreator } = this;
 
-      const { v, r, s } = await signData(listingCreator, ezcrowRamp, {
-        owner: listingCreator.address,
-        tokenSymbol: TOKEN_SYMBOL,
-        currencySymbol: CURRENCY_SYMBOL,
-        orderId: INITIAL_ORDER_ID,
-        accept: false,
-        nonce: 0,
-      });
+      const { v, r, s } = await signData(
+        listingCreator,
+        ezcrowRamp,
+        { OrderActionPermit },
+        {
+          owner: listingCreator.address,
+          tokenSymbol: TOKEN_SYMBOL,
+          currencySymbol: CURRENCY_SYMBOL,
+          orderId: INITIAL_ORDER_ID,
+          accept: false,
+          nonce: 0,
+        }
+      );
 
       await ezcrowRamp.rejectOrder(
         listingCreator,
@@ -947,14 +998,19 @@ describe('EzcrowRamp', function () {
       const tokenSymbol = 'BTC';
       const currencySymbol = 'AUD';
 
-      const { v, r, s } = await signData(listingCreator, ezcrowRamp, {
-        owner: listingCreator.address,
-        tokenSymbol,
-        currencySymbol,
-        orderId: INITIAL_ORDER_ID,
-        accept: false,
-        nonce: 0,
-      });
+      const { v, r, s } = await signData(
+        listingCreator,
+        ezcrowRamp,
+        { OrderActionPermit },
+        {
+          owner: listingCreator.address,
+          tokenSymbol,
+          currencySymbol,
+          orderId: INITIAL_ORDER_ID,
+          accept: false,
+          nonce: 0,
+        }
+      );
 
       await expect(
         ezcrowRamp.rejectOrder(

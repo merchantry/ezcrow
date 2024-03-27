@@ -11,7 +11,11 @@ interface IOrdersEventHandler {
 
     function onOrderRejected(Order memory order) external;
 
-    function beforeOrderCreate(uint256 listingId, uint256 tokenAmount) external view;
+    function beforeOrderCreate(
+        uint256 listingId,
+        uint256 tokenAmount,
+        address creator
+    ) external view;
 
     function calculateOrderPrice(
         uint256 listingId,

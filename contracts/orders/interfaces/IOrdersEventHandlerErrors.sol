@@ -12,4 +12,6 @@ interface IOrdersEventHandlerErrors {
         uint256 fiatAmount,
         uint256 availableTokenAmount
     );
+
+    error UserAlreadyHasActiveOrders(address user, uint256 listingId);
 }
