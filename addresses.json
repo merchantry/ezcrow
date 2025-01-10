@@ -1,29 +1,55 @@
 {
   "FiatTokenPairDeployer": {
-    "telostest": "0xc52b9417C462E8812ab539B3cd31568A0aa4856e"
+    "telostest": "0xE46a5Eb5B4A90ae064C1ca3934C4715054af914E",
+    "arbitrumsepolia": "0x7b5E04c48D2DAb201F1c93fab2784f11aCdD5738"
   },
   "ListingsKeyStorageDeployer": {
-    "telostest": "0x6a2abA5d42f2F6D6B69e32C85A00b694973D5654"
+    "telostest": "0x66a16077EA9f14E4D7cC458FA58cccba95ab9F67",
+    "arbitrumsepolia": "0x15C2F76C9EC4EBE90b92AD3769c620C9c834e700"
   },
   "ListingsHandlerDeployer": {
-    "telostest": "0x2c8238CE55b1194C61f18ac528865c9c47137229"
+    "telostest": "0x00b43bFe9Ce234acB46830dE93A857433FcbbD23",
+    "arbitrumsepolia": "0x858a337860df7F0A02BEcc6a597E95864C9C7288"
   },
   "OrdersHandlerDeployer": {
-    "telostest": "0x0646CfFCdfE0A3AbE86e34eC367c19130177A93E"
+    "telostest": "0x68a9E391f0130741B4ed8acb7E86237020171684",
+    "arbitrumsepolia": "0x7465570d1F0F159A90267b7E488713Aab8922C2D"
   },
   "EzcrowRamp": {
-    "telostest": "0xD54189F49fd2E9eeb3f4e4959487d83a80838C3b"
+    "telostest": "0xca01628a7E74d1d304A4c31CC4a72A62A246A417",
+    "arbitrumsepolia": "0x12872cE3e6c07eb4b993a13876c0eeaF68F6E914"
   },
   "FiatTokenPairHandler": {
-    "telostest": "0x496cD4D9A36e045d63fAf4A2111bfeEEaB6200c5"
+    "telostest": "0x97027767EbFC4dd5119D7f707AC4120F0B90eF22",
+    "arbitrumsepolia": "0x86C6cABee5EC5B96241a0E26cFD3F63e16965Eb0"
   },
   "OrdersKeyStorageDeployer": {
-    "telostest": "0xB362d50cEf8D9Ccce255CEb8dd70F41DD1d825f7"
+    "telostest": "0x9738c7EFA26ABC210098251c1D352aadE82072f7",
+    "arbitrumsepolia": "0x0639f78Ac3851d8FEc902a16D61F11dC43Ad95F5"
   },
   "EzcrowRampQuery": {
-    "telostest": "0xE2569Dd45186D1c227467c5Ed8980F45718F12f1"
+    "telostest": "0x960b01E2Da03353b3796608A3686EE2830477DA4",
+    "arbitrumsepolia": "0xc57CBd1F013B14325F1FBC105013D4f212F62179"
   },
   "TestToken": {
-    "telostest": "0xF3136b01c3b9d27d778C6E3387861d0A0Cfd7474"
+    "telostest": "0x9B28089f8b07951A1232e89D9d659b2a4F88Fb1F",
+    "arbitrumsepolia": "0x1Bc56B1F030aA97ceC4802Fa14E2Edc862a53da6",
+    "telos": "0xc43a4E9fccfc1fB3b9133Eea3b1f6DfFEd4D3B9a"
+  },
+  "MultiOwnable": {
+    "telostest": "0xA1bd771A5F9b5FE279D0089B879896E6e60FECdE",
+    "arbitrumsepolia": "0x34eb00DB01c285e60F446AcE8cac4a669EEaA1f7"
+  },
+  "WhitelistedUsersDatabaseHandler": {
+    "telostest": "0x482FDc77000f84cC4eBb1D09DA6E821dBaDFE242",
+    "arbitrumsepolia": "0xe82AB87AF1CBE76c211d757bB53b0EA6E131e132"
+  },
+  "WhitelistedUsersDatabase": {
+    "telostest": "0x19A63C9BD6983C0036B9a48461f06593A3ee6A2A",
+    "arbitrumsepolia": "0xCe0954B438A1B81Be92B88f3160149C8df29c4Ba"
+  },
+  "SideBetV5": {
+    "telostest": "0x1A8aa52A9eCeF16D00ab5E1AE0Cd3d262c646a6f",
+    "telos": "0x0119117EcC6351ca8Df2322F698136D3625Cc3B5"
   }
 }
